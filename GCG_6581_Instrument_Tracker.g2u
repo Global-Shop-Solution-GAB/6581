@@ -1,0 +1,1298 @@
+﻿Program.Sub.ScreenSU.Start
+Gui.f_Main..Create(BaseForm)
+Gui.f_Main..Caption("Instrument Tracker")
+Gui.f_Main..Size(1024,720)
+Gui.f_Main..MinX(0)
+Gui.f_Main..MinY(0)
+Gui.f_Main..Position(0,0)
+Gui.f_Main..AlwaysOnTop(False)
+Gui.f_Main..FontName("Tahoma")
+Gui.f_Main..FontSize(8.25)
+Gui.f_Main..ControlBox(True)
+Gui.f_Main..MaxButton(True)
+Gui.f_Main..MinButton(True)
+Gui.f_Main..MousePointer(0)
+Gui.f_Main..Moveable(True)
+Gui.f_Main..Sizeable(True)
+Gui.f_Main..ShowInTaskBar(True)
+Gui.f_Main..TitleBar(True)
+Gui.f_Main..Event(UnLoad,F_Main_UnLoad)
+Gui.f_Main.GsGcInstrument.Create(GsGridControl)
+Gui.f_Main.GsGcInstrument.Enabled(True)
+Gui.f_Main.GsGcInstrument.Visible(True)
+Gui.f_Main.GsGcInstrument.Zorder(0)
+Gui.f_Main.GsGcInstrument.Size(1023,583)
+Gui.f_Main.GsGcInstrument.Position(0,107)
+Gui.f_Main.GsGcInstrument.Anchor(15)
+Gui.f_Main.GsGcInstrument.Dock(0)
+Gui.f_Main.GsGcInstrument.Event(RowCellClick,GsGcInstrument_RowCellClick)
+Gui.f_Main.GsGcInstrument.Event(CellValueChanged,GsGcInstrument_CellValueChanged)
+Gui.f_Main.cmd_Refresh.Create(Button)
+Gui.f_Main.cmd_Refresh.Enabled(True)
+Gui.f_Main.cmd_Refresh.Visible(True)
+Gui.f_Main.cmd_Refresh.Zorder(0)
+Gui.f_Main.cmd_Refresh.Size(75,23)
+Gui.f_Main.cmd_Refresh.Position(940,40)
+Gui.f_Main.cmd_Refresh.Caption("REFRESH")
+Gui.f_Main.cmd_Refresh.FontName("Tahoma")
+Gui.f_Main.cmd_Refresh.FontSize(8.25)
+Gui.f_Main.cmd_Refresh.Anchor(9)
+Gui.f_Main.cmd_Refresh.Event(Click,cmd_Refresh_Click)
+Gui.f_Main.frameDates.Create(Frame)
+Gui.f_Main.frameDates.Enabled(True)
+Gui.f_Main.frameDates.Visible(True)
+Gui.f_Main.frameDates.Zorder(0)
+Gui.f_Main.frameDates.Size(231,95)
+Gui.f_Main.frameDates.Position(5,4)
+Gui.f_Main.frameDates.Caption("Date Shipped")
+Gui.f_Main.frameDates.FontName("Tahoma")
+Gui.f_Main.frameDates.FontSize(8.25)
+Gui.f_Main.frameDates.BorderStyle(3)
+Gui.f_Main.dtpBeg.Create(DatePicker)
+Gui.f_Main.dtpBeg.Enabled(True)
+Gui.f_Main.dtpBeg.Visible(True)
+Gui.f_Main.dtpBeg.Zorder(0)
+Gui.f_Main.dtpBeg.Size(100,20)
+Gui.f_Main.dtpBeg.Position(7,66)
+Gui.f_Main.dtpBeg.CheckBox(False)
+Gui.f_Main.dtpBeg.FontName("Tahoma")
+Gui.f_Main.dtpBeg.FontSize(8.25)
+Gui.f_Main.dtpBeg.Parent("frameDates")
+Gui.f_Main.dtpEnd.Create(DatePicker)
+Gui.f_Main.dtpEnd.Enabled(True)
+Gui.f_Main.dtpEnd.Visible(True)
+Gui.f_Main.dtpEnd.Zorder(0)
+Gui.f_Main.dtpEnd.Size(100,20)
+Gui.f_Main.dtpEnd.Position(124,66)
+Gui.f_Main.dtpEnd.CheckBox(False)
+Gui.f_Main.dtpEnd.FontName("Tahoma")
+Gui.f_Main.dtpEnd.FontSize(8.25)
+Gui.f_Main.dtpEnd.Parent("frameDates")
+Gui.f_Main.lblStart.Create(Label,"Start Date:",True,54,13,0,7,50,True,0,"Tahoma",8.25,,0,0)
+Gui.f_Main.lblStart.BorderStyle(0)
+Gui.f_Main.lblStart.Parent("frameDates")
+Gui.f_Main.lblEnd.Create(Label,"End Date:",True,48,13,0,124,50,True,0,"Tahoma",8.25,,0,0)
+Gui.f_Main.lblEnd.BorderStyle(0)
+Gui.f_Main.lblEnd.Parent("frameDates")
+Gui.f_Main.chkDate.Create(CheckBox)
+Gui.f_Main.chkDate.Enabled(True)
+Gui.f_Main.chkDate.Visible(True)
+Gui.f_Main.chkDate.Zorder(0)
+Gui.f_Main.chkDate.Size(155,20)
+Gui.f_Main.chkDate.Position(7,23)
+Gui.f_Main.chkDate.Caption("Use Date Range")
+Gui.f_Main.chkDate.FontName("Tahoma")
+Gui.f_Main.chkDate.FontSize(8.25)
+Gui.f_Main.chkDate.Parent("frameDates")
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+V.Global.bError.Declare(Boolean)
+V.Global.bUnattended.Declare(Boolean)
+V.Global.bLoadData.Declare(Boolean, False)
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.Try
+Function.Intrinsic.UI.UsePixels ' Allows you to use Pixels instead of Twips throughout
+
+'open connection
+F.ODBC.Connection!con.OpenConnection(V.Ambient.PDSN, V.Ambient.PUser, V.Ambient.PPass)
+
+'check hook that the script is firing from
+F.Intrinsic.Control.SelectCase(V.Caller.Hook)
+	F.Intrinsic.Control.Case(28532)
+	'New post-save hook on shipments
+		'callsub to pull the order information to query order_hist_lot and add the serial numbers shipped to custom table
+		F.Intrinsic.Control.CallSub(NewSaveProcess)
+		F.Intrinsic.Control.CallSub(f_Main_Unload)
+	F.Intrinsic.Control.Case(26260)
+	' Shipment line pre delete hook
+		'callsub to pull the order information to query order_hist_lot for the serial numbers that have been shipped
+		F.Intrinsic.Control.CallSub(DeleteLineProcess)
+		F.Intrinsic.Control.CallSub(f_Main_Unload)
+	F.Intrinsic.Control.Case(25970)
+	'Shipments Open Pre Save Hook
+		'callsub to pull the order information and query order_hist_lot and match records in custom table
+		F.Intrinsic.Control.CallSub(OpenSaveProcess)
+		F.Intrinsic.Control.CallSub(f_Main_Unload)
+	F.Intrinsic.Control.CaseElse
+	'Dashboard hook is firing
+		'callsub to load the data
+		F.Intrinsic.Control.CallSub(BuildDataTable)
+		'callsub to format the grid
+		F.Intrinsic.Control.CallSub(FormatGrid)
+		'callsub to set context menus
+		F.Intrinsic.Control.CallSub(SetContextMenus)
+		'callsub to deserialize
+		F.Intrinsic.Control.CallSub(Deserialize)
+		Gui.f_Main..ApplyTheme
+		'show the form
+		Gui.f_Main..Show
+F.Intrinsic.Control.EndSelect
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(ErrorMessage, "ErrorNumber", V.Ambient.ErrorNumber, "ErrorDescription", V.Ambient.ErrorDescription, "Subroutine", V.Ambient.CurrentSubroutine, "UNATTENDED", V.Global.bUnattended, "Project", "6581", "ProjectTitle", "Instrument Tracker", "Callback", "F_Main_UnLoad")
+F.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.NewSaveProcess.Start
+F.Intrinsic.Control.Try
+V.Local.dDateShipped.Declare(Date)
+V.Local.iRowCnt.Declare(Long)
+V.Local.iCnt.Declare(Long)
+V.Local.iCnt2.Declare(Long)
+V.Local.sBDFValues.Declare(String)
+V.Local.sOrderNo.Declare(String)
+V.Local.sOrderSuffix.Declare(String)
+V.Local.sOrderLine.Declare(String)
+v.Local.sCustomer.Declare(String)
+V.Local.sPackingList.Declare(String)
+V.Local.sSQL.Declare(String)
+V.Local.sSQL2.Declare(String)
+V.Local.sRet.Declare(String)
+V.Local.sRet2.Declare(String)
+V.Local.sRet3.Declare(String)
+V.Local.sDateShipped.Declare(String)
+V.Local.sSerial.Declare(String)
+V.Local.sPart.Declare(String)
+V.Local.sLoc.Declare(String)
+V.Local.sDesc.Declare(String)
+V.Local.sAltDesc.Declare(String)
+V.Local.sCustomerName.Declare(String)
+V.Local.sCustCity.Declare(String)
+V.Local.sCustState.Declare(String)
+V.Local.sCustZip.Declare(String)
+V.Local.sCustCountry.Declare(String)
+v.Local.sret4.Declare(String)
+
+
+'load the BDF
+F.Intrinsic.BDF.Load("AUX001", "AUX001")
+'copy the BDF
+F.Intrinsic.BDF.Clone("AUX001", "TempBDF")
+'determine the number of rows
+F.Intrinsic.BDF.ReadRowCount("AUX001", V.Local.iRowCnt)
+F.Intrinsic.Math.Sub(V.Local.iRowCnt,1,V.Local.iRowCnt)
+F.Intrinsic.Control.If(V.Local.iRowCnt,>=,0)
+	'loop through the BDF
+	F.Intrinsic.Control.For(V.Local.iCnt, 0, V.Local.iRowCnt, 1)
+		F.Intrinsic.BDF.ReadRow("AUX001", V.Local.iCnt, V.Local.sBDFValues)
+		F.Intrinsic.String.Split(V.Local.sBDFValues, "|~|", V.Local.sBDFValues)
+		
+		'set the order number, order line, date shipped
+		V.Local.sOrderNo.Set(V.Local.sBDFValues(0).Trim)
+		F.Intrinsic.String.LPad(V.Local.sOrderNo, "0", 7,V.Local.sOrderNo)
+		V.Local.sOrderLine.Set(V.Local.sBDFValues(1).Trim)
+		F.Intrinsic.String.LPad(V.Local.sOrderLine, "0",3, V.Local.sOrderLine)
+		F.Intrinsic.String.RPad(V.Local.sOrderLine, "0", 4, V.Local.sOrderLine)
+		
+		V.Local.dDateShipped.Set(V.Ambient.Date)
+		F.Intrinsic.String.Format(V.Local.dDateShipped, "YYYY-MM-DD", V.Local.sDateShipped)
+		
+		'query order_hist_lot
+		F.Intrinsic.String.Build("SELECT ORDER_SUFFIX, SERIAL, PART, LOCN FROM V_ORDER_HIST_LOT WHERE ORDER_NO = '{0}' AND ORDER_LINE = '{1}' AND DATE_SHIPPED = '{2}'", V.Local.sOrderNo.Trim, V.Local.sOrderLine.Trim, V.Local.sDateShipped.PervasiveDate, V.Local.sSQL)
+		F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL, V.Local.sRet)
+		F.Intrinsic.Control.If(V.Local.sRet.Trim,<>,"")
+			'split the rows
+			F.Intrinsic.String.Split(V.Local.sRet,"#$#", V.Local.sRet)
+			F.Intrinsic.Control.For(V.Local.iCnt2, V.Local.sRet.LBound, V.Local.sRet.UBound, 1)
+				'split column values
+				F.Intrinsic.String.Split(V.Local.sRet(V.Local.iCnt2), "*!*", V.Local.sRet2)
+				V.Local.sOrderSuffix.Set(V.Local.sRet2(0).Trim)
+				V.Local.sSerial.Set(V.Local.sRet2(1).Trim)
+				V.Local.sPart.Set(V.Local.sRet2(2).Trim)
+				V.Local.sLoc.Set(V.Local.sRet2(3).Trim)
+				
+				F.Intrinsic.Control.If(V.Local.sSerial.Trim,<>,"")
+					'query order header to get customer
+					F.Intrinsic.String.Build("SELECT CUSTOMER FROM V_ORDER_HEADER WHERE ORDER_NO = '{0}'", v.Local.sOrderNo.Trim, V.Local.sSQL2)
+					F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL2, V.Local.sCustomer)
+					F.Intrinsic.Control.If(V.Local.sCustomer.Trim,<>,"")
+						'query inventory all to get the description and alt description
+						F.Intrinsic.String.Build("SELECT DESCRIPTION, DESCRIPTION_2 FROM V_INVENTORY_ALL WHERE PART = '{0}' AND LOCATION = '{1}'",V.Local.sPart, V.Local.sLoc, V.Local.sSQL2)
+						F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL2, V.Local.sRet3)
+						F.Intrinsic.Control.If(V.Local.sRet3.Trim,<>,"")
+							F.Intrinsic.String.Split(V.Local.sRet3, "*!*", V.Local.sRet3)
+							V.Local.sDesc.Set(V.Local.sRet3(0).Trim)
+							V.Local.sAltDesc.Set(V.Local.sRet3(1).Trim)
+						F.Intrinsic.Control.EndIf
+						
+						'query customer master to get city, state, zip, country
+						F.Intrinsic.String.Build("SELECT CITY, STATE, ZIP, COUNTRY FROM V_CUSTOMER_MASTER WHERE CUSTOMER = '{0}'", v.Local.sCustomer.Trim, V.Local.sSQL)
+						F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL, V.Local.sret4)
+						F.Intrinsic.Control.If(V.Local.sret4.Trim,<>,"")
+							F.Intrinsic.String.Split(V.Local.sret4, "*!*", v.Local.sret4)
+							V.Local.sCustCity.Set(V.Local.sRet4(0).Trim)
+							V.Local.sCustState.Set(V.Local.sret4(1).Trim)
+							V.Local.sCustZip.Set(V.Local.sret4(2).Trim)
+							V.Local.sCustCountry.Set(V.Local.sret4(3).Trim)
+						F.Intrinsic.Control.EndIf
+						
+						'query to get customer name
+						F.Intrinsic.String.Build("SELECT NAME_CUSTOMER FROM V_CUSTOMER_MASTER WHERE CUSTOMER = '{0}'", v.Local.sCustomer.Trim, v.Local.sSQL)
+						f.ODBC.Connection!con.ExecuteAndReturn(v.Local.sSQL, v.Local.sCustomerName)
+						F.Intrinsic.Control.If(V.Local.sCustomerName.Trim,<>,"")
+							'insert records into custom table
+							F.Intrinsic.String.Build("INSERT INTO GCG_6581_SERIALS (SERIAL_NO, ORIG_CUST, ORIG_CUST_NAME, CURR_CUST,CURR_CUST_NAME, DATE_SHIPPED, ORDER_NO, ORDER_SUFFIX, ORDER_LINE, DESCRIPTION, ALT_DESC, ORIG_CITY, ORIG_STATE, ORIG_ZIP, ORIG_COUNTRY, CURR_CITY, CURR_STATE, CURR_ZIP, CURR_COUNTRY) VALUES ('{0}', '{1}', '{2}', '{3}', '{4}', '{5}', '{6}', '{7}', '{8}', '{9}', '{10}', '{11}', '{12}', '{13}', '{14}', '{15}', '{16}', '{17}', '{18}')", V.Local.sSerial.Trim, V.Local.sCustomer.Trim, V.Local.sCustomerName.PSQLFriendly, V.Local.sCustomer.Trim, V.Local.sCustomerName.PSQLFriendly, V.Local.dDateShipped.PervasiveDate, V.Local.sOrderNo.Trim, V.Local.sOrderSuffix.Trim, V.Local.sOrderLine.Trim, V.Local.sDesc.PSQLFriendly, V.Local.sAltDesc.PSQLFriendly, v.Local.sCustCity.Trim, V.Local.sCustState.Trim, V.Local.sCustZip.Trim, V.Local.sCustCountry.Trim, v.Local.sCustCity.Trim, V.Local.sCustState.Trim, V.Local.sCustZip.Trim, V.Local.sCustCountry.Trim,V.Local.sSQL2)
+						F.Intrinsic.Control.Else
+							'insert records into custom table
+							F.Intrinsic.String.Build("INSERT INTO GCG_6581_SERIALS (SERIAL_NO, ORIG_CUST, CURR_CUST, DATE_SHIPPED, ORDER_NO, ORDER_SUFFIX, ORDER_LINE, DESCRIPTION, ALT_DESC, ORIG_CITY, ORIG_STATE, ORIG_ZIP, ORIG_COUNTRY, CURR_CITY, CURR_STATE, CURR_ZIP, CURR_COUNTRY) VALUES ('{0}', '{1}', '{2}', '{3}', '{4}', '{5}', '{6}', '{7}', '{8}', '{9}', '{10}','{11}','{12}','{13}','{14}','{15}','{16}')", V.Local.sSerial.Trim, V.Local.sCustomer.Trim, V.Local.sCustomer.Trim, V.Local.dDateShipped.PervasiveDate, V.Local.sOrderNo.Trim, V.Local.sOrderSuffix.Trim, V.Local.sOrderLine.Trim, V.Local.sDesc.PSQLFriendly, V.Local.sAltDesc.PSQLFriendly,v.Local.sCustCity.Trim, V.Local.sCustState.Trim, V.Local.sCustZip.Trim, V.Local.sCustCountry.Trim, v.Local.sCustCity.Trim, V.Local.sCustState.Trim, V.Local.sCustZip.Trim, V.Local.sCustCountry.Trim, V.Local.sSQL2)
+						
+						F.Intrinsic.Control.EndIf
+						F.ODBC.Connection!con.Execute(V.Local.sSQL2)
+						
+					F.Intrinsic.Control.EndIf
+				F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.Next(V.Local.iCnt2)
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Next(V.Local.iCnt)
+	
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(ErrorMessage, "ErrorNumber", V.Ambient.ErrorNumber, "ErrorDescription", V.Ambient.ErrorDescription, "Subroutine", V.Ambient.CurrentSubroutine, "UNATTENDED", V.Global.bUnattended, "Project", "6581", "ProjectTitle", "Instrument Tracker", "Callback", "F_Main_UnLoad")
+F.Intrinsic.Control.EndTry
+Program.Sub.NewSaveProcess.End
+
+Program.Sub.DeleteLineProcess.Start
+F.Intrinsic.Control.Try
+V.Local.iCnt.Declare(String)
+V.Local.sCustomer.Declare(String)
+V.Local.sOrderNo.Declare(String)
+V.Local.sOrderSuffix.Declare(String)
+V.Local.sOrderLine.Declare(String)
+V.Local.sPackingList.Declare(String)
+V.Local.sRet.Declare(String)
+V.Local.sRet2.Declare(String)
+V.Local.sSerialNo.Declare(String)
+V.Local.sSQL.Declare(String)
+V.Local.sSQL2.Declare(String)
+
+'set the passed variables
+V.Local.sPackingList.Set(V.Passed.000003)
+V.Local.sCustomer.Set(V.Passed.000006)
+V.Local.sOrderNo.Set(V.Passed.000150)
+F.Intrinsic.String.LPad(v.Local.sOrderNo, "0", 7, V.Local.sOrderNo)
+V.Local.sOrderSuffix.Set(V.Passed.000151)
+F.Intrinsic.String.LPad(V.Local.sOrderSuffix, "0", 4, V.Local.sOrderSuffix)
+V.Local.sOrderLine.Set(V.Passed.009002)
+F.Intrinsic.String.Left(V.Local.sOrderLine, 4, V.Local.sOrderLine)
+
+
+'query order_hist_lot to get the serial numbers shipped on the line so they can be deleted from the custom table
+F.Intrinsic.String.Build("SELECT SERIAL FROM V_ORDER_HIST_LOT WHERE ORDER_NO = '{0}' AND ORDER_SUFFIX = '{1}' AND ORDER_LINE = '{2}'", V.Local.sOrderNo.Trim, V.Local.sOrderSuffix.Trim, V.Local.sOrderLine.Trim, V.Local.sSQL)
+F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL, V.Local.sRet)
+F.Intrinsic.Control.If(V.Local.sRet.Trim,<>,"")
+	F.Intrinsic.String.Split(V.Local.sRet.Trim,"#$#", V.Local.sRet)
+	F.Intrinsic.Control.For(V.Local.iCnt, V.Local.sRet.LBound, V.Local.sRet.UBound, 1)
+		V.Local.sSerialNo.Set(V.Local.sRet(V.Local.iCnt).Trim)
+		
+		'query custom table to see if the record exists
+		F.Intrinsic.String.Build("SELECT * FROM GCG_6581_SERIALS WHERE SERIAL_NO = '{0}' AND ORDER_NO = '{1}' AND ORDER_SUFFIX = '{2}' AND ORDER_LINE = '{3}'", V.Local.sSerialNo.Trim, V.Local.sOrderNo.Trim, V.Local.sOrderSuffix.Trim, V.Local.sOrderLine.Trim, V.Local.sSQL2)
+		F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL2, V.Local.sRet2)
+		F.Intrinsic.Control.If(V.Local.sRet2.Trim,<>,"")
+			'if the record exists, delete it from the custom table
+			F.Intrinsic.String.Build("DELETE FROM GCG_6581_SERIALS WHERE SERIAL_NO = '{0}' AND ORDER_NO = '{1}' AND ORDER_SUFFIX = '{2}' AND ORDER_LINE = '{3}'", V.Local.sSerialNo.Trim, V.Local.sOrderNo.Trim, V.Local.sOrderSuffix.Trim, V.Local.sOrderLine.Trim, V.Local.sSQL2)
+			f.ODBC.Connection!con.Execute(V.Local.sSQL2)
+		F.Intrinsic.Control.EndIf
+		
+	F.Intrinsic.Control.Next(V.Local.iCnt)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(ErrorMessage, "ErrorNumber", V.Ambient.ErrorNumber, "ErrorDescription", V.Ambient.ErrorDescription, "Subroutine", V.Ambient.CurrentSubroutine, "UNATTENDED", V.Global.bUnattended, "Project", "6581", "ProjectTitle", "Instrument Tracker", "Callback", "F_Main_UnLoad")
+F.Intrinsic.Control.EndTry
+Program.Sub.DeleteLineProcess.End
+
+Program.Sub.OpenSaveProcess.Start
+F.Intrinsic.Control.Try
+V.Local.dDateShipped.Declare(String)
+V.Local.iCnt.Declare(Long)
+V.Local.iCnt2.Declare(Long)
+V.Local.sCustomer.Declare(String)
+V.Local.sOrderNo.Declare(String)
+V.Local.sOrderSuffix.Declare(String)
+V.Local.sPackingList.Declare(String)
+V.Local.sRet.Declare(String)
+V.Local.sRet2.Declare(String)
+V.Local.sRet3.Declare(String)
+V.Local.sRet4.Declare(String)
+V.Local.sSQL.Declare(String)
+V.Local.sSQL2.Declare(String)
+V.Local.sLotOrderNo.Declare(String)
+V.Local.sLotOrderSuffix.Declare(String)
+V.Local.sLotOrderLine.Declare(String)
+V.Local.sLot.Declare(String)
+V.Local.sBin.Declare(String)
+V.Local.sHeat.Declare(String)
+V.Local.sDateShipped.Declare(String)
+V.Local.sPart.Declare(String)
+V.Local.sLoc.Declare(String)
+V.Local.sSerial.Declare(String)
+V.Local.sDesc.Declare(String)
+V.Local.sAltDesc.Declare(String)
+V.Local.sCustName.Declare(String)
+V.Local.sCustCity.Declare(String)
+V.Local.sCustState.Declare(String)
+V.Local.sCustZip.Declare(String)
+V.Local.sCustCountry.Declare(String)
+V.Local.sCustomerName.Declare(String)
+v.Local.sOrderLine.Declare(String)
+
+
+V.Local.sPackingList.Set(V.Passed.000003)
+V.Local.sCustomer.Set(V.Passed.000006)
+V.Local.sOrderNo.Set(V.Passed.000150)
+'format the order number with leading zeros
+F.Intrinsic.String.LPad(V.Local.sOrderNo, "0", 7, V.Local.sOrderNo)
+
+V.Local.sOrderSuffix.Set(V.Passed.000151)
+'format the order suffix with leading zeros
+F.Intrinsic.String.LPad(V.Local.sOrderSuffix, "0", 4, V.Local.sOrderSuffix)
+
+'Use shipment number, order number and suffix to pull the shipment lines
+F.Intrinsic.String.Build("SELECT ORDER_NO, ORDER_SUFFIX, ORDER_LINE, LOT, BIN, HEAT, SERIAL, DATE_SHIPPED, PART, LOCN FROM V_ORDER_HIST_LOT WHERE ORDER_NO = '{0}' AND ORDER_SUFFIX = '{1}'", V.Local.sOrderNo.Trim, V.Local.sOrderSuffix.Trim, V.Local.sSQL)
+F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL, V.Local.sRet)
+F.Intrinsic.Control.If(V.Local.sRet.Trim,<>,"")
+	'split the variable to see if more than one record was returned
+	F.Intrinsic.String.Split(V.Local.sRet,"#$#", V.Local.sRet)
+	F.Intrinsic.Control.For(V.Local.iCnt, V.Local.sRet.LBound, V.Local.sRet.UBound, 1)
+		'split the variables to get the column values
+		F.Intrinsic.String.Split(V.Local.sRet(V.Local.iCnt),"*!*", V.Local.sRet2)
+		V.Local.sLotOrderNo.Set(V.Local.sRet2(0).Trim)
+		V.Local.sLotOrderSuffix.Set(V.Local.sRet2(1).Trim)
+		V.Local.sLotOrderLine.Set(V.Local.sRet2(2).Trim)
+		
+		F.Intrinsic.String.LPad(V.Local.sLotOrderLine, "0",3, V.Local.sLotOrderLine)
+		F.Intrinsic.String.RPad(V.Local.sLotOrderLine, "0", 4, V.Local.sLotOrderLine)
+		
+		V.Local.sLot.Set(V.Local.sRet2(3))
+		V.Local.sBin.Set(V.Local.sRet2(4))
+		V.Local.sHeat.Set(V.Local.sRet2(5))
+		V.Local.sSerial.Set(V.Local.sRet2(6))
+		V.Local.sDateShipped.Set(V.Local.sRet2(7))
+		F.Intrinsic.Date.ConvertDString(V.Local.sDateShipped, "MM/DD/YYYY", V.Local.dDateShipped)
+		F.Intrinsic.String.Format(V.Local.dDateShipped, "YYYY-MM-DD", V.Local.sDateShipped)
+		V.Local.sPart.Set(V.Local.sRet2(8))
+		V.Local.sLoc.Set(V.Local.sRet2(9).Trim)
+		
+		'check to make sure there is a serial number associated with the record. If there is, continue, if not don't do anything
+		F.Intrinsic.Control.If(V.Local.sSerial.Trim,<>,"")
+			'query custom table to see if the record exists
+			F.Intrinsic.String.Build("SELECT * FROM GCG_6581_SERIALS WHERE SERIAL_NO = '{0}' AND ORDER_NO = '{1}' AND ORDER_SUFFIX = '{2}' AND ORDER_LINE = '{3}'", V.Local.sSerial.Trim, V.Local.sLotOrderNo.Trim, V.Local.sLotOrderSuffix.Trim, V.Local.sLotOrderLine.Trim, V.Local.sSQL2)
+			F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL2, V.Local.sRet2)
+			F.Intrinsic.Control.If(V.Local.sRet2.Trim,=,"")
+				'query inventory all to get the descriptions
+				F.Intrinsic.String.Build("SELECT DESCRIPTION, DESCRIPTION_2 FROM V_INVENTORY_ALL WHERE PART = '{0}' AND LOCATION = '{1}'", V.Local.sPart, V.Local.sLoc.Trim, V.Local.sSQL2)
+				F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL2, V.Local.sRet3)
+				F.Intrinsic.Control.If(V.Local.sRet3.Trim,<>,"")
+					F.Intrinsic.String.Split(V.Local.sRet3,"*!*", V.Local.sRet3)
+					V.Local.sDesc.Set(V.Local.sRet3(0).Trim)
+					V.Local.sAltDesc.Set(V.Local.sRet3(1).Trim)
+				F.Intrinsic.Control.Else
+					V.Local.sDesc.Set("")
+					V.Local.sAltDesc.Set("")
+				F.Intrinsic.Control.EndIf
+				
+				'query customer master to get city, state, zip, country
+				F.Intrinsic.String.Build("SELECT CITY, STATE, ZIP, COUNTRY FROM V_CUSTOMER_MASTER WHERE CUSTOMER = '{0}'", v.Local.sCustomer.Trim, V.Local.sSQL)
+				F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL, V.Local.sret4)
+				F.Intrinsic.Control.If(V.Local.sret4.Trim,<>,"")
+					F.Intrinsic.String.Split(V.Local.sret4, "*!*", v.Local.sret4)
+					V.Local.sCustCity.Set(V.Local.sRet4(0).Trim)
+					V.Local.sCustState.Set(V.Local.sret4(1).Trim)
+					V.Local.sCustZip.Set(V.Local.sret4(2).Trim)
+					V.Local.sCustCountry.Set(V.Local.sret4(3).Trim)
+				F.Intrinsic.Control.EndIf
+			
+				'query to get customer name
+				F.Intrinsic.String.Build("SELECT NAME_CUSTOMER FROM V_CUSTOMER_MASTER WHERE CUSTOMER = '{0}'", v.Local.sCustomer.Trim, v.Local.sSQL)
+				f.ODBC.Connection!con.ExecuteAndReturn(v.Local.sSQL, v.Local.sCustomerName)
+				F.Intrinsic.Control.If(V.Local.sCustomerName.Trim,<>,"")
+					'insert records into custom table
+					F.Intrinsic.String.Build("INSERT INTO GCG_6581_SERIALS (SERIAL_NO, ORIG_CUST, ORIG_CUST_NAME, CURR_CUST,CURR_CUST_NAME, DATE_SHIPPED, ORDER_NO, ORDER_SUFFIX, ORDER_LINE, DESCRIPTION, ALT_DESC, ORIG_CITY, ORIG_STATE, ORIG_ZIP, ORIG_COUNTRY, CURR_CITY, CURR_STATE, CURR_ZIP, CURR_COUNTRY) VALUES ('{0}', '{1}', '{2}', '{3}', '{4}', '{5}', '{6}', '{7}', '{8}', '{9}', '{10}', '{11}', '{12}', '{13}', '{14}', '{15}', '{16}', '{17}', '{18}')", V.Local.sSerial.Trim, V.Local.sCustomer.Trim, V.Local.sCustomerName.PSQLFriendly, V.Local.sCustomer.Trim, V.Local.sCustomerName.PSQLFriendly, V.Local.dDateShipped.PervasiveDate, V.Local.sOrderNo.Trim, V.Local.sOrderSuffix.Trim, V.Local.sLotOrderLine.Trim, V.Local.sDesc.PSQLFriendly, V.Local.sAltDesc.PSQLFriendly, v.Local.sCustCity.Trim, V.Local.sCustState.Trim, V.Local.sCustZip.Trim, V.Local.sCustCountry.Trim, v.Local.sCustCity.Trim, V.Local.sCustState.Trim, V.Local.sCustZip.Trim, V.Local.sCustCountry.Trim,V.Local.sSQL2)
+				F.Intrinsic.Control.Else
+					'insert records into custom table
+					F.Intrinsic.String.Build("INSERT INTO GCG_6581_SERIALS (SERIAL_NO, ORIG_CUST, CURR_CUST, DATE_SHIPPED, ORDER_NO, ORDER_SUFFIX, ORDER_LINE, DESCRIPTION, ALT_DESC, ORIG_CITY, ORIG_STATE, ORIG_ZIP, ORIG_COUNTRY, CURR_CITY, CURR_STATE, CURR_ZIP, CURR_COUNTRY) VALUES ('{0}', '{1}', '{2}', '{3}', '{4}', '{5}', '{6}', '{7}', '{8}', '{9}', '{10}','{11}','{12}','{13}','{14}','{15}','{16}')", V.Local.sSerial.Trim, V.Local.sCustomer.Trim, V.Local.sCustomer.Trim, V.Local.dDateShipped.PervasiveDate, V.Local.sOrderNo.Trim, V.Local.sOrderSuffix.Trim, V.Local.sLotOrderLine.Trim, V.Local.sDesc.PSQLFriendly, V.Local.sAltDesc.PSQLFriendly,v.Local.sCustCity.Trim, V.Local.sCustState.Trim, V.Local.sCustZip.Trim, V.Local.sCustCountry.Trim, v.Local.sCustCity.Trim, V.Local.sCustState.Trim, V.Local.sCustZip.Trim, V.Local.sCustCountry.Trim, V.Local.sSQL2)
+					
+				F.Intrinsic.Control.EndIf
+				
+				F.ODBC.Connection!con.Execute(V.Local.sSQL2)
+'			F.Intrinsic.Control.ElseIf(V.Local.sRet2.Trim,<>,"")
+'				F.Intrinsic.String.Split(V.Local.sRet2,"#$#", V.Local.sRet2)
+'				F.Intrinsic.Control.If(V.Local.sRet.UBound,<>,V.Local.sRet2.UBound)
+'				'check to see if the number of records matches
+'					'if it doesnt, check to see which records exist. If it exists, do nothing. If it doesn't, insert it. This way, anything that has been modified already won't be removed
+'					F.Intrinsic.String.Build("SELECT * FROM GCG_6581_SERIALS WHERE SERIAL_NO = '{0}' AND ORDER_NO = '{1}' AND ORDER_SUFFIX = '{2}' AND ORDER_LINE = '{3}'", V.Local.sSerial.Trim, V.Local.sLotOrderNo.Trim, V.Local.sLotOrderSuffix.Trim, V.Local.sLotOrderLine.Trim, V.Local.sSQL2)
+'					F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL2, V.Local.sRet4)
+'					F.Intrinsic.Control.If(V.Local.sRet4.Trim,=,"")
+
+'						'query inventory all to get the descriptions
+'						F.Intrinsic.String.Build("SELECT DESCRIPTION, DESCRIPTION_2 FROM V_INVENTORY_ALL WHERE PART = '{0}' AND LOCATION = '{1}'", V.Local.sPart, V.Local.sLoc.Trim, V.Local.sSQL2)
+'						F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL2, V.Local.sRet3)
+'						F.Intrinsic.Control.If(V.Local.sRet3.Trim,<>,"")
+'							F.Intrinsic.String.Split(V.Local.sRet3,"*!*", V.Local.sRet3)
+'							V.Local.sDesc.Set(V.Local.sRet3(0).Trim)
+'							V.Local.sAltDesc.Set(V.Local.sRet3(1).Trim)
+'						F.Intrinsic.Control.Else
+'							V.Local.sDesc.Set("")
+'							V.Local.sAltDesc.Set("")
+'						F.Intrinsic.Control.EndIf
+'			
+'						'if no record is found, add it
+'						F.Intrinsic.String.Build("INSERT INTO GCG_6581_SERIALS (SERIAL_NO, ORIG_CUST, CURR_CUST, DATE_SHIPPED, ORDER_NO, ORDER_SUFFIX, ORDER_LINE, DESCRIPTION, ALT_DESC) VALUES ('{0}', '{1}', '{2}', '{3}', '{4}', '{5}', '{6}', '{7}', '{8}')", V.Local.sSerial.Trim, V.Local.sCustomer.Trim, V.Local.sCustomer.Trim, V.Local.dDateShipped.PervasiveDate, V.Local.sLotOrderNo.Trim, V.Local.sLotOrderSuffix.Trim, V.Local.sLotOrderLine.Trim, V.Local.sDesc.Trim, V.Local.sAltDesc.Trim, V.Local.sSQL2)
+'						F.ODBC.Connection!con.Execute(V.Local.sSQL2)
+'					F.Intrinsic.Control.EndIf
+'				F.Intrinsic.Control.EndIf
+				
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Next(V.Local.iCnt)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(ErrorMessage, "ErrorNumber", V.Ambient.ErrorNumber, "ErrorDescription", V.Ambient.ErrorDescription, "Subroutine", V.Ambient.CurrentSubroutine, "UNATTENDED", V.Global.bUnattended, "Project", "6581", "ProjectTitle", "Instrument Tracker", "Callback", "F_Main_UnLoad")
+F.Intrinsic.Control.EndTry
+Program.Sub.OpenSaveProcess.End
+
+Program.Sub.BuildDataTable.Start
+F.Intrinsic.Control.Try
+
+'check to see if datatable exists
+F.Intrinsic.Control.If(V.DataTable.dtSerial.Exists)
+	F.Data.DataTable.Close("dtSerial")
+F.Intrinsic.Control.EndIf
+
+'create datatable
+F.Data.DataTable.Create("dtSerial", True)
+
+'add columns
+F.Data.DataTable.AddColumn("dtSerial", "SERIAL", "STRING")
+F.Data.DataTable.AddColumn("dtSerial", "PART", "STRING")
+F.Data.DataTable.AddColumn("dtSerial", "LOCATION", "STRING")
+F.Data.DataTable.AddColumn("dtSerial", "DESC", "STRING")
+F.Data.DataTable.AddColumn("dtSerial", "ALT_DESC", "STRING")
+F.Data.DataTable.AddColumn("dtSerial", "ORDER_NO", "STRING")
+F.Data.DataTable.AddColumn("dtSerial", "ORDER_SUFFIX", "STRING")
+F.Data.DataTable.AddColumn("dtSerial", "ORDER_LINE", "STRING")
+F.Data.DataTable.AddColumn("dtSerial", "ORIG_CUST", "STRING")
+F.Data.DataTable.AddColumn("dtSerial", "ORIG_CUST_NAME", "STRING")
+F.Data.DataTable.AddColumn("dtSerial", "ORIG_CITY", "STRING")
+F.Data.DataTable.AddColumn("dtSerial", "ORIG_STATE", "STRING")
+F.Data.DataTable.AddColumn("dtSerial", "ORIG_ZIP", "STRING")
+F.Data.DataTable.AddColumn("dtSerial", "ORIG_COUNTRY", "STRING")
+F.Data.DataTable.AddColumn("dtSerial","CURR_CUST", "STRING" )
+F.Data.DataTable.AddColumn("dtSerial", "CURR_CUST_BRW", "STRING")
+F.Data.DataTable.AddColumn("dtSerial", "CURR_CUST_NAME", "STRING")
+F.Data.DataTable.AddColumn("dtSerial", "CURR_CITY", "STRING")
+F.Data.DataTable.AddColumn("dtSerial", "CURR_STATE", "STRING")
+F.Data.DataTable.AddColumn("dtSerial", "CURR_ZIP", "STRING")
+F.Data.DataTable.AddColumn("dtSerial", "CURR_COUNTRY", "STRING")
+F.Data.DataTable.AddColumn("dtSerial", "DATE_SHIPPED", "DATE")
+F.Data.DataTable.AddColumn("dtSerial", "SERIES_INFO", "STRING")
+F.Data.DataTable.AddColumn("dtSerial", "SIZE_INFO", "STRING")
+F.Data.DataTable.AddColumn("dtSerial", "WOOD_TYPE", "STRING")
+F.Data.DataTable.AddColumn("dtSerial", "RESONATOR_TYPE", "STRING")
+F.Data.DataTable.AddColumn("dtSerial", "RESONATOR_COLOR", "STRING")
+F.Data.DataTable.AddColumn("dtSerial", "KEYBOARD_INFO", "STRING")
+F.Data.DataTable.AddColumn("dtSerial", "FREQUENCY_INFO", "STRING")
+F.Data.DataTable.AddColumn("dtSerial", "HEIGHT_INFO", "STRING")
+F.Data.DataTable.AddColumn("dtSerial", "VIBE_CORD", "STRING")
+F.Data.DataTable.AddColumn("dtSerial", "VIBE_MOTOR_VOLT", "STRING")
+F.Data.DataTable.AddColumn("dtSerial", "NOTES", "STRING")
+
+F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(ErrorMessage, "ErrorNumber", V.Ambient.ErrorNumber, "ErrorDescription", V.Ambient.ErrorDescription, "Subroutine", V.Ambient.CurrentSubroutine, "UNATTENDED", V.Global.bUnattended, "Project", "6581", "ProjectTitle", "Instrument Tracker", "Callback", "F_Main_UnLoad")
+F.Intrinsic.Control.EndTry
+Program.Sub.BuildDataTable.End
+
+Program.Sub.FormatGrid.Start
+F.Intrinsic.Control.Try
+V.Local.sDefault.Declare(String)
+V.Local.sGV.Declare(String)
+V.Local.sProperty.Declare(String)
+
+Gui.f_Main.GsGcInstrument.AddGridviewFromDatatable("gvSerial", "dtSerial")
+V.Local.sGV.Set("gvSerial")
+
+Gui.f_Main.GsGcInstrument.SetGridviewProperty(V.Local.sGV, "MultiSelect", False)
+Gui.f_Main.GsGcInstrument.SetGridviewProperty(V.Local.sGV, "AllowFilter", True)
+Gui.f_Main.GsGcInstrument.SetGridviewProperty(V.Local.sGV, "OptionsViewShowGroupPanel", True)
+Gui.f_Main.GsGcInstrument.SetGridviewProperty(V.Local.sGV, "OptionsViewShowAutoFilterRow", True)
+Gui.f_Main.GsGcInstrument.SetGridviewProperty(V.Local.sGV, "EnableAppearanceOddRow", False)
+Gui.f_Main.GsGcInstrument.SetGridviewProperty(V.Local.sGV, "OptionsViewColumnAutoWidth", False)
+Gui.f_Main.GsGcInstrument.SetGridviewProperty(V.Local.sGV, "OptionsViewRowAutoHeight", True)
+Gui.f_Main.GsGcInstrument.SetGridviewProperty(V.Local.sGV, "AllowColumnResizing", True)
+Gui.f_Main.GsGcInstrument.SetGridviewProperty(V.Local.sGV, "AllowColumnMoving", True)
+Gui.f_Main.GsGcInstrument.SetGridviewProperty(V.Local.sGV, "ColumnPanelRowHeight", 45)
+
+V.Local.sProperty.Set("Caption")
+V.Local.sDefault.Set(" ")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "SERIAL", V.Local.sProperty, "Serial Number")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "PART", V.Local.sProperty, "Part")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "LOCATION", V.Local.sProperty, "Loc")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "DESC", V.Local.sProperty, "Description")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ALT_DESC", V.Local.sProperty, "Alt Desc 1")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORDER_NO", V.Local.sProperty, "Order No")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORDER_SUFFIX", V.Local.sProperty, "Order Suffix")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORDER_LINE", V.Local.sProperty, "Order Line")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_CUST", V.Local.sProperty, "Original Customer")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_CUST_NAME", V.Local.sProperty, "Original Customer Name")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_CITY", V.Local.sProperty, "Original Owner City")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_STATE", V.Local.sProperty, "Original Owner State")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_ZIP", V.Local.sProperty, "Original Owner Zip")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_COUNTRY", V.Local.sProperty, "Original Owner Country")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CUST", V.Local.sProperty, "Current Customer")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CUST_NAME", V.Local.sProperty, "Current Customer Name")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CUST_BRW", V.Local.sProperty, " ")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CITY", V.Local.sProperty, "Current Owner City")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_STATE", V.Local.sProperty, "Current Owner State")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_ZIP", V.Local.sProperty, "Current Owner Zip")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_COUNTRY", V.Local.sProperty, "Current Owner Country")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "DATE_SHIPPED", V.Local.sProperty, "Date Shipped")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "SERIES_INFO", V.Local.sProperty, "Series")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "SIZE_INFO", V.Local.sProperty, "Size")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "WOOD_TYPE", V.Local.sProperty, "Wood Type")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "RESONATOR_TYPE", V.Local.sProperty, "Resonator Type")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "RESONATOR_COLOR", V.Local.sProperty, "Resonator Color")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "KEYBOARD_INFO", V.Local.sProperty, "Keyboard")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "FREQUENCY_INFO", V.Local.sProperty, "Frequency")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "HEIGHT_INFO", V.Local.sProperty, "Height")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "VIBE_CORD", V.Local.sProperty, "Vibe Cord")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "VIBE_MOTOR_VOLT", V.Local.sProperty, "Vibe Motor Voltage")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "NOTES", V.Local.sProperty, "Notes")
+
+V.Local.sProperty.Set("AllowEdit")
+V.Local.sDefault.Set("False")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "SERIAL", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "PART", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "LOCATION", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "DESC", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ALT_DESC", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORDER_NO", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORDER_SUFFIX", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORDER_LINE", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_CUST", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_CUST_NAME", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_CITY", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_STATE", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_ZIP", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_COUNTRY", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CUST", V.Local.sProperty, True)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CUST_BRW", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CUST_NAME", V.Local.sProperty, True)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CITY", V.Local.sProperty, True)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_STATE", V.Local.sProperty, True)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_ZIP", V.Local.sProperty, True)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_COUNTRY", V.Local.sProperty, True)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "DATE_SHIPPED", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "SERIES_INFO", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "SIZE_INFO", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "WOOD_TYPE", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "RESONATOR_TYPE", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "RESONATOR_COLOR", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "KEYBOARD_INFO", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "FREQUENCY_INFO", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "HEIGHT_INFO", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "VIBE_CORD", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "VIBE_MOTOR_VOLT", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "NOTES", V.Local.sProperty, True)
+
+V.Local.sProperty.Set("ReadOnly")
+V.Local.sDefault.Set("True")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "SERIAL", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "PART", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "LOCATION", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "DESC", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ALT_DESC", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORDER_NO", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORDER_SUFFIX", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORDER_LINE", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_CUST", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_CUST_NAME", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_CITY", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_STATE", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_ZIP", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_COUNTRY", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CUST", V.Local.sProperty, False)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CUST_BRW", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CUST_NAME", V.Local.sProperty, False)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CITY", V.Local.sProperty, False)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_STATE", V.Local.sProperty, False)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_ZIP", V.Local.sProperty, False)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_COUNTRY", V.Local.sProperty, False)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "DATE_SHIPPED", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "SERIES_INFO", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "SIZE_INFO", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "WOOD_TYPE", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "RESONATOR_TYPE", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "RESONATOR_COLOR", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "KEYBOARD_INFO", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "FREQUENCY_INFO", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "HEIGHT_INFO", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "VIBE_CORD", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "VIBE_MOTOR_VOLT", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "NOTES", V.Local.sProperty, False)
+
+V.Local.sProperty.Set("HeaderFontBold")
+V.Local.sDefault.Set("True")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "SERIAL", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "PART", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "LOCATION", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "DESC", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ALT_DESC", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORDER_NO", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORDER_SUFFIX", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORDER_LINE", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_CUST", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_CUST_NAME", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_CITY", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_STATE", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_ZIP", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_COUNTRY", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CUST", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CUST_BRW", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CUST_NAME", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CITY", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_STATE", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_ZIP", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_COUNTRY", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "DATE_SHIPPED", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "SERIES_INFO", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "SIZE_INFO", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "WOOD_TYPE", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "RESONATOR_TYPE", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "RESONATOR_COLOR", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "KEYBOARD_INFO", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "FREQUENCY_INFO", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "HEIGHT_INFO", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "VIBE_CORD", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "VIBE_MOTOR_VOLT", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "NOTES", V.Local.sProperty, V.Local.sDefault)
+
+
+V.Local.sProperty.Set("HeaderHAlignment")
+V.Local.sDefault.Set("Center")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "SERIAL", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "PART", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "LOCATION", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "DESC", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ALT_DESC", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORDER_NO", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORDER_SUFFIX", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORDER_LINE", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_CUST", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_CUST_NAME", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_CITY", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_STATE", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_ZIP", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_COUNTRY", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CUST", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CUST_BRW", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CUST_NAME", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CITY", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_STATE", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_ZIP", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_COUNTRY", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "DATE_SHIPPED", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "SERIES_INFO", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "SIZE_INFO", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "WOOD_TYPE", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "RESONATOR_TYPE", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "RESONATOR_COLOR", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "KEYBOARD_INFO", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "FREQUENCY_INFO", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "HEIGHT_INFO", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "VIBE_CORD", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "VIBE_MOTOR_VOLT", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "NOTES", V.Local.sProperty, V.Local.sDefault)
+
+V.Local.sProperty.Set("MinWidth")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "SERIAL", V.Local.sProperty, 100)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "PART", V.Local.sProperty, 100)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "LOCATION", V.Local.sProperty, 50)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "DESC", V.Local.sProperty, 200)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ALT_DESC", V.Local.sProperty, 150)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORDER_NO", V.Local.sProperty, 100)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORDER_SUFFIX", V.Local.sProperty, 75)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORDER_LINE", V.Local.sProperty, 75)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_CUST", V.Local.sProperty, 100)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_CUST_NAME", V.Local.sProperty, 150)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_CITY", V.Local.sProperty, 75)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_STATE", V.Local.sProperty, 50)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_ZIP", V.Local.sProperty, 50)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_COUNTRY", V.Local.sProperty, 50)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CUST", V.Local.sProperty, 100)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CUST_BRW", V.Local.sProperty, 30)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CUST_NAME", V.Local.sProperty, 150)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CITY", V.Local.sProperty, 75)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_STATE", V.Local.sProperty, 50)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_ZIP", V.Local.sProperty, 50)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_COUNTRY", V.Local.sProperty, 50)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "DATE_SHIPPED", V.Local.sProperty, 100)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "SERIES_INFO", V.Local.sProperty, 75)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "SIZE_INFO", V.Local.sProperty, 75)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "WOOD_TYPE", V.Local.sProperty, 75)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "RESONATOR_TYPE", V.Local.sProperty, 75)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "RESONATOR_COLOR", V.Local.sProperty, 75)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "KEYBOARD_INFO", V.Local.sProperty, 75)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "FREQUENCY_INFO", V.Local.sProperty, 75)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "HEIGHT_INFO", V.Local.sProperty, 75)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "VIBE_CORD", V.Local.sProperty, 75)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "VIBE_MOTOR_VOLT", V.Local.sProperty, 75)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "NOTES", V.Local.sProperty, 300 )
+
+V.Local.sProperty.Set("MaxWidth")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CUST_BRW", V.Local.sProperty, 30)
+
+V.Local.sProperty.Set("DisplayCustomDatetime")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "DATE_SHIPPED", V.Local.sProperty,  "d")
+
+V.Local.sProperty.Set("CellHAlignment")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "DATE_SHIPPED", V.Local.sProperty,  "Far")
+
+V.Local.sProperty.Set("HeaderWordWrap")
+V.Local.sDefault.Set("Wrap")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "SERIAL", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "PART", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "LOCATION", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "DESC", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ALT_DESC", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORDER_NO", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORDER_SUFFIX", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORDER_LINE", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_CUST", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_CUST_NAME", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_CITY", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_STATE", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_ZIP", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "ORIG_COUNTRY", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CUST", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CUST_BRW", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CUST_NAME", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CITY", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_STATE", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_ZIP", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_COUNTRY", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "DATE_SHIPPED", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "SERIES_INFO", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "SIZE_INFO", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "WOOD_TYPE", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "RESONATOR_TYPE", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "RESONATOR_COLOR", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "KEYBOARD_INFO", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "FREQUENCY_INFO", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "HEIGHT_INFO", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "VIBE_CORD", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "VIBE_MOTOR_VOLT", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "NOTES", V.Local.sProperty, V.Local.sDefault)
+
+V.Local.sProperty.Set("CellBackColor")
+V.Local.sDefault.Set("#FFFFE0")
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "NOTES", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CUST", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CUST_NAME", V.Local.sProperty,V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CITY", V.Local.sProperty,V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_STATE", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_ZIP", V.Local.sProperty, V.Local.sDefault)
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_COUNTRY", V.Local.sProperty, V.Local.sDefault)
+
+Gui.f_Main.GsGcInstrument.SetColumnProperty(V.Local.sGV, "CURR_CUST_BRW", "Icon", "^")
+
+'Gui.f_Main.GsGcInstrument.ColumnEdit(V.Local.sGV, "CURR_CUST_BRW", "EditorButton","")
+
+Gui.f_Main.GsGcInstrument.MainView("gvSerial")
+
+V.Global.bLoadData.Set(True)
+
+F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(ErrorMessage, "ErrorNumber", V.Ambient.ErrorNumber, "ErrorDescription", V.Ambient.ErrorDescription, "Subroutine", V.Ambient.CurrentSubroutine, "UNATTENDED", V.Global.bUnattended, "Project", "6581", "ProjectTitle", "Instrument Tracker", "Callback", "F_Main_UnLoad")
+F.Intrinsic.Control.EndTry
+Program.Sub.FormatGrid.End
+
+Program.Sub.SetContextMenus.Start
+F.Intrinsic.Control.Try
+
+Gui.f_Main..ContextMenuCreate("ctxAll")
+Gui.f_Main.GsGcInstrument.ContextMenuAttach("ctxAll")
+Gui.f_Main..ContextMenuAddItem("ctxAll", "Export", 0, "Export")
+Gui.f_Main..ContextMenuAddItem("ctxAll", "ResetColumns", 0, "Reset Columns")
+
+Gui.f_Main..ContextMenuSetItemEventHandler("ctxAll", "Export", "MenuClickExport")
+Gui.f_Main..ContextMenuSetItemEventHandler("ctxAll", "ResetColumns", "MenuClickResetColumns")
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(ErrorMessage, "ErrorNumber", V.Ambient.ErrorNumber, "ErrorDescription", V.Ambient.ErrorDescription, "Subroutine", V.Ambient.CurrentSubroutine, "UNATTENDED", V.Global.bUnattended, "Project", "6581", "ProjectTitle", "Instrument Tracker", "Callback", "F_Main_UnLoad")
+F.Intrinsic.Control.EndTry
+Program.Sub.SetContextMenus.End
+
+Program.Sub.MenuClickExport.Start
+F.Intrinsic.Control.Try
+V.Local.bExcel.Declare(Boolean)
+V.Local.bFileLocked.Declare(Boolean)
+V.Local.sFileExport.Declare(String)
+V.Local.sMsg.Declare(String)
+
+F.Automation.MSExcel.CheckPresence(V.Local.bExcel)
+F.Intrinsic.Control.If(V.Local.bExcel,=,True)
+	F.Intrinsic.String.Build("{0}\GCG_6581_Instrument_Export.xlsx", V.Caller.LocalGSSTempDir, V.Local.sFileExport)
+	F.Intrinsic.File.IsFileLocked(V.Local.sFileExport, V.Local.bFileLocked)
+	F.Intrinsic.Control.If(V.Local.bFileLocked,=,True)
+		F.Intrinsic.String.Build("File is already open. Please close and export again.{0}File: {1}", V.Ambient.NewLine, V.Local.sFileExport, V.Local.sMsg)
+		F.Intrinsic.UI.Msgbox(V.Local.sMsg, "File in Use")
+	F.Intrinsic.Control.Else
+		Gui.f_Main.GsGcInstrument.Export(V.Local.sFileExport, "xlsx")
+		F.Intrinsic.Task.ShellExec(0, "", V.Local.sFileExport, "", "",1)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.Else
+	F.Intrinsic.String.Build("{0}\GCG_6581_Instrument_Export.csv", V.Caller.LocalGSSTempDir, V.Local.sFileExport)
+	F.Intrinsic.File.IsFileLocked(V.Local.sFileExport, V.Local.bFileLocked)
+	F.Intrinsic.Control.If(V.Local.bFileLocked,=,True)
+		F.Intrinsic.String.Build("File is already open. Please close and export again.{0}File: {1}", V.Ambient.NewLine, V.Local.sFileExport, V.Local.sMsg)
+		F.Intrinsic.UI.Msgbox(V.Local.sMsg, "File in Use")
+	F.Intrinsic.Control.Else
+		Gui.f_Main.GsGcInstrument.Export(V.Local.sFileExport, "csv")
+		F.Intrinsic.Task.ShellExec(0, "", V.Local.sFileExport, "", "",0)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(ErrorMessage, "ErrorNumber", V.Ambient.ErrorNumber, "ErrorDescription", V.Ambient.ErrorDescription, "Subroutine", V.Ambient.CurrentSubroutine, "UNATTENDED", V.Global.bUnattended, "Project", "6581", "ProjectTitle", "Instrument Tracker", "Callback", "F_Main_UnLoad")
+F.Intrinsic.Control.EndTry
+Program.Sub.MenuClickExport.End
+
+Program.Sub.MenuClickResetColumns.Start
+F.Intrinsic.Control.Try
+
+F.Global.Registry.AddValue(V.Caller.User,V.Caller.CompanyCode,"gvSerial",6581,1000,False,"Serialize",False,0,-999.0,1/1/1980,12:00:00 AM,"")
+
+V.Global.bLoadData.Set(False)
+F.Intrinsic.Control.CallSub(cmd_Refresh_Click)
+
+F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(ErrorMessage, "ErrorNumber", V.Ambient.ErrorNumber, "ErrorDescription", V.Ambient.ErrorDescription, "Subroutine", V.Ambient.CurrentSubroutine, "UNATTENDED", V.Global.bUnattended, "Project", "6581", "ProjectTitle", "Instrument Tracker", "Callback", "F_Main_UnLoad")
+F.Intrinsic.Control.EndTry
+Program.Sub.MenuClickResetColumns.End
+
+Program.Sub.cmd_Refresh_Click.Start
+F.Intrinsic.Control.Try
+V.Local.dBegDate.Declare(Date)
+V.Local.dDateShipped.Declare(Date)
+V.Local.dEndDate.Declare(Date)
+V.Local.iCnt.Declare(Long)
+V.Local.sBegDate.Declare(String)
+V.Local.sEndDate.Declare(String)
+V.Local.sRet.Declare(String)
+V.Local.sSQL.Declare(String)
+V.Local.sSerial.Declare(String)
+V.Local.sOrigCust.Declare(String)
+V.Local.sCurrCust.Declare(String)
+V.Local.sDateShipped.Declare(String)
+V.Local.sNotes.Declare(String)
+V.Local.sOrderNo.Declare(String)
+V.Local.sOrderSuffix.Declare(String)
+V.Local.sOrderLine.Declare(String)
+V.Local.sPart.Declare(String)
+V.Local.sLoc.Declare(String)
+V.Local.sDesc.Declare(String)
+V.Local.sAltDesc.Declare(String)
+
+Gui.f_Main.GsGcInstrument.InvokeWait("Loading Serial Records...", "Please Wait")
+Gui.f_Main.GsGcInstrument.Visible(False)
+'set the date range
+V.Local.dBegDate.Set(V.Screen.f_Main!dtpBeg.Value)
+V.Local.dEndDate.Set(V.Screen.f_Main!dtpEnd.Value)
+
+F.Data.DataTable.DeleteRow("dtSerial")
+'check to see if the use date range checkbox is checked. 
+'if so, use the date range selected in the query
+'if not, query for all records up to today's date
+
+'need to fix query to pull in all the new information from the custom table
+'query custom table to get serial numbers
+F.Intrinsic.Control.If(V.Screen.f_Main!chkDate.Value,=,1)
+	F.Intrinsic.String.Format(V.Local.dBegDate, "YYYY-MM-DD", V.Local.sBegDate)
+	F.Intrinsic.String.Format(V.Local.dEndDate, "YYYY-MM-DD", V.Local.sEndDate)
+	'F.Intrinsic.String.Build("SELECT DISTINCT A.SERIAL_NO AS SERIAL, A.ORIG_CUST, A.CURR_CUST, A.DATE_SHIPPED, A.NOTES, A.ORDER_NO, A.ORDER_SUFFIX, A.ORDER_LINE, C.PART, C.LOCATION, C.DESCRIPTION AS 'DESC', D.DESCRIPTION_2 AS ALT_DESC, A.ORIG_CITY, A.ORIG_STATE, A.ORIG_ZIP, A.ORIG_COUNTRY, A.CURR_CITY, A.CURR_STATE, A.CURR_ZIP, A.CURR_COUNTRY, A.SERIES_INFO, A.SIZE_INFO, A.WOOD_TYPE, A.RESONATOR_TYPE, A.RESONATOR_COLOR, A.KEYBOARD_INFO, A.FREQUENCY_INFO, A.HEIGHT_INFO, A.VIBE_CORD, A.VIBE_MOTOR_VOLT, A.ORIG_CUST_NAME, A.CURR_CUST_NAME FROM GCG_6581_SERIALS A  LEFT JOIN ((SELECT F.ORDER_NO, F.RECORD_NO, F.PART, F.LOCATION, F.DESCRIPTION FROM V_ORDER_LINES F) UNION (SELECT E.ORDER_NO, E.ORDER_LINE AS RECORD_NO,E.PART, E.LOCATION, E.DESCRIPTION FROM V_ORDER_HIST_LINE E)) C ON A.ORDER_NO = C.ORDER_NO AND A.ORDER_LINE = C.RECORD_NO LEFT JOIN V_INVENTORY_MST2 D ON C.PART = D.PART AND C.LOCATION = D.LOCATION WHERE A.DATE_SHIPPED >= '{0}' AND A.DATE_SHIPPED <= '{1}' ORDER BY A.SERIAL_NO, A.ORDER_NO, A.ORDER_SUFFIX, A.ORDER_LINE ", V.Local.sBegDate, V.Local.sEndDate, V.Local.sSQL)
+	
+	F.Intrinsic.String.Build("SELECT A.SERIAL_NO AS SERIAL, A.ORIG_CUST, A.CURR_CUST, A.DATE_SHIPPED, A.NOTES, A.ORDER_NO, A.ORDER_SUFFIX, A.ORDER_LINE, B.PART, B.LOCATION, B.DESCRIPTION AS 'DESC',D.DESCRIPTION_2 AS ALT_DESC, A.ORIG_CITY, A.ORIG_STATE, A.ORIG_ZIP, A.ORIG_COUNTRY, A.CURR_CITY, A.CURR_STATE, A.CURR_ZIP, A.CURR_COUNTRY, A.SERIES_INFO, A.SIZE_INFO,A.WOOD_TYPE, A.RESONATOR_TYPE, A.RESONATOR_COLOR, A.KEYBOARD_INFO, A.FREQUENCY_INFO, A.HEIGHT_INFO, A.VIBE_CORD, A.VIBE_MOTOR_VOLT, A.ORIG_CUST_NAME, A.CURR_CUST_NAME FROM GCG_6581_SERIALS A JOIN V_ORDER_LINES B ON A.ORDER_NO = B.ORDER_NO AND A.ORDER_LINE = B.RECORD_NO LEFT JOIN V_INVENTORY_MST2 D ON B.PART = D.PART AND B.LOCATION = D.LOCATION WHERE A.DATE_SHIPPED >= '{0}' AND A.DATE_SHIPPED <= '{1}' UNION SELECT E.SERIAL_NO AS SERIAL, E.ORIG_CUST, E.CURR_CUST, E.DATE_SHIPPED, E.NOTES, E.ORDER_NO, E.ORDER_SUFFIX, E.ORDER_LINE, F.PART, F.LOCATION, F.DESCRIPTION AS 'DESC', G.DESCRIPTION_2 AS ALT_DESC, E.ORIG_CITY, E.ORIG_STATE, E.ORIG_ZIP, E.ORIG_COUNTRY, E.CURR_CITY, E.CURR_STATE, E.CURR_ZIP, E.CURR_COUNTRY, E.SERIES_INFO, E.SIZE_INFO, E.WOOD_TYPE, E.RESONATOR_TYPE, E.RESONATOR_COLOR, E.KEYBOARD_INFO, E.FREQUENCY_INFO, E.HEIGHT_INFO, E.VIBE_CORD, E.VIBE_MOTOR_VOLT, E.ORIG_CUST_NAME, E.CURR_CUST_NAME FROM GCG_6581_SERIALS E JOIN V_ORDER_HIST_LINE F ON E.ORDER_NO = F.ORDER_NO AND E.ORDER_LINE = F.ORDER_LINE LEFT JOIN V_INVENTORY_MST2 G ON F.PART = G.PART AND F.LOCATION = G.LOCATION WHERE  E.DATE_SHIPPED >= '{0}' AND E.DATE_SHIPPED <= '{1}' UNION SELECT SERIAL_NO AS SERIAL, ORIG_CUST, CURR_CUST, DATE_SHIPPED, NOTES, ORDER_NO, ORDER_SUFFIX, ORDER_LINE, '' as PART, '' as LOCATION, '' AS 'DESC', '' as ALT_DESC, ORIG_CITY, ORIG_STATE, ORIG_ZIP, ORIG_COUNTRY, CURR_CITY, CURR_STATE, CURR_ZIP, CURR_COUNTRY, SERIES_INFO, SIZE_INFO,WOOD_TYPE, RESONATOR_TYPE, RESONATOR_COLOR,KEYBOARD_INFO, FREQUENCY_INFO, HEIGHT_INFO, VIBE_CORD, VIBE_MOTOR_VOLT, ORIG_CUST_NAME, CURR_CUST_NAME FROM GCG_6581_SERIALS  WHERE  DATE_SHIPPED >= '{0}' AND DATE_SHIPPED <= '{1}' and (Order_Line = '' or Order_Line is null) ORDER BY A.SERIAL_NO, A.ORDER_NO, A.ORDER_SUFFIX DESC, A.ORDER_LINE", v.Local.sBegDate, V.Local.sEndDate, V.Local.sSQL)
+F.Intrinsic.Control.Else
+	f.Intrinsic.String.Format(V.Ambient.Date, "YYYY-MM-DD", V.Local.sEndDate)
+'	F.Intrinsic.String.Build("SELECT DISTINCT A.SERIAL_NO AS SERIAL, A.ORIG_CUST, A.CURR_CUST, A.DATE_SHIPPED, A.NOTES, A.ORDER_NO, A.ORDER_SUFFIX, A.ORDER_LINE, C.PART, C.LOCATION, C.DESCRIPTION AS 'DESC', D.DESCRIPTION_2 AS ALT_DESC, A.ORIG_CITY, A.ORIG_STATE, A.ORIG_ZIP, A.ORIG_COUNTRY, A.CURR_CITY, A.CURR_STATE, A.CURR_ZIP, A.CURR_COUNTRY, A.SERIES_INFO, A.SIZE_INFO, A.WOOD_TYPE, A.RESONATOR_TYPE, A.RESONATOR_COLOR, A.KEYBOARD_INFO, A.FREQUENCY_INFO, A.HEIGHT_INFO, A.VIBE_CORD, A.VIBE_MOTOR_VOLT, A.ORIG_CUST_NAME, A.CURR_CUST_NAME FROM GCG_6581_SERIALS A  LEFT JOIN ((SELECT F.ORDER_NO, F.RECORD_NO, F.PART, F.LOCATION, F.DESCRIPTION FROM V_ORDER_LINES F) UNION (SELECT E.ORDER_NO, E.ORDER_LINE AS RECORD_NO,E.PART, E.LOCATION, E.DESCRIPTION FROM V_ORDER_HIST_LINE E)) C ON A.ORDER_NO = C.ORDER_NO AND A.ORDER_LINE = C.RECORD_NO JOIN V_INVENTORY_MST2 D ON C.PART = D.PART AND C.LOCATION = D.LOCATION WHERE A.DATE_SHIPPED <= '{0}' ORDER BY A.SERIAL_NO, A.ORDER_NO, A.ORDER_SUFFIX, A.ORDER_LINE ",  V.Local.sEndDate, V.Local.sSQL)
+	F.Intrinsic.String.Build("SELECT A.SERIAL_NO AS SERIAL, A.ORIG_CUST, A.CURR_CUST, A.DATE_SHIPPED, A.NOTES, A.ORDER_NO, A.ORDER_SUFFIX, A.ORDER_LINE, B.PART, B.LOCATION, B.DESCRIPTION AS 'DESC',D.DESCRIPTION_2 AS ALT_DESC, A.ORIG_CITY, A.ORIG_STATE, A.ORIG_ZIP, A.ORIG_COUNTRY, A.CURR_CITY, A.CURR_STATE, A.CURR_ZIP, A.CURR_COUNTRY, A.SERIES_INFO, A.SIZE_INFO,A.WOOD_TYPE, A.RESONATOR_TYPE, A.RESONATOR_COLOR, A.KEYBOARD_INFO, A.FREQUENCY_INFO, A.HEIGHT_INFO, A.VIBE_CORD, A.VIBE_MOTOR_VOLT, A.ORIG_CUST_NAME, A.CURR_CUST_NAME FROM GCG_6581_SERIALS A JOIN V_ORDER_LINES B ON A.ORDER_NO = B.ORDER_NO AND A.ORDER_LINE = B.RECORD_NO LEFT JOIN V_INVENTORY_MST2 D ON B.PART = D.PART AND B.LOCATION = D.LOCATION WHERE  A.DATE_SHIPPED <= '{0}' UNION SELECT E.SERIAL_NO AS SERIAL, E.ORIG_CUST, E.CURR_CUST, E.DATE_SHIPPED, E.NOTES, E.ORDER_NO, E.ORDER_SUFFIX, E.ORDER_LINE, F.PART, F.LOCATION, F.DESCRIPTION AS 'DESC', G.DESCRIPTION_2 AS ALT_DESC, E.ORIG_CITY, E.ORIG_STATE, E.ORIG_ZIP, E.ORIG_COUNTRY, E.CURR_CITY, E.CURR_STATE, E.CURR_ZIP, E.CURR_COUNTRY, E.SERIES_INFO, E.SIZE_INFO, E.WOOD_TYPE, E.RESONATOR_TYPE, E.RESONATOR_COLOR, E.KEYBOARD_INFO, E.FREQUENCY_INFO, E.HEIGHT_INFO, E.VIBE_CORD, E.VIBE_MOTOR_VOLT, E.ORIG_CUST_NAME, E.CURR_CUST_NAME FROM GCG_6581_SERIALS E JOIN V_ORDER_HIST_LINE F ON E.ORDER_NO = F.ORDER_NO AND E.ORDER_LINE = F.ORDER_LINE LEFT JOIN V_INVENTORY_MST2 G ON F.PART = G.PART AND F.LOCATION = G.LOCATION WHERE  E.DATE_SHIPPED <= '{0}' UNION SELECT SERIAL_NO AS SERIAL, ORIG_CUST, CURR_CUST, DATE_SHIPPED, NOTES, ORDER_NO, ORDER_SUFFIX, ORDER_LINE, '' as PART, '' as LOCATION, '' AS 'DESC', '' as ALT_DESC, ORIG_CITY, ORIG_STATE, ORIG_ZIP, ORIG_COUNTRY, CURR_CITY, CURR_STATE, CURR_ZIP, CURR_COUNTRY, SERIES_INFO, SIZE_INFO,WOOD_TYPE, RESONATOR_TYPE, RESONATOR_COLOR,KEYBOARD_INFO, FREQUENCY_INFO, HEIGHT_INFO, VIBE_CORD, VIBE_MOTOR_VOLT, ORIG_CUST_NAME, CURR_CUST_NAME FROM GCG_6581_SERIALS  WHERE  DATE_SHIPPED <= '{0}' and (Order_Line = '' or Order_Line is null) ORDER BY A.SERIAL_NO, A.ORDER_NO, A.ORDER_SUFFIX DESC, A.ORDER_LINE", V.Local.sEndDate, V.Local.sSQL)
+F.Intrinsic.Control.EndIf
+
+'check to see if datatable exists. If it does, close it
+F.Intrinsic.Control.If(V.DataTable.dtTemp.Exists)
+	F.Data.DataTable.Close("dtTemp")
+F.Intrinsic.Control.EndIf
+
+'create temp datatable with query from custom table
+F.Data.DataTable.CreateFromSQL("dtTemp", "con", V.Local.sSQL, True)
+	
+''loop through results and add rows to dtserial datatable
+'F.Intrinsic.Control.For(V.Local.iCnt, 0, V.DataTable.dtTemp.RowCount--,1)
+'	'set the variables
+'	V.Local.sSerial.Set(V.DataTable.dtTemp(V.Local.iCnt).SERIAL_NO!FieldValTrim)
+'	V.Local.sOrigCust.Set(V.DataTable.dtTemp(V.Local.iCnt).ORIG_CUST!FieldValTrim)
+'	V.Local.sCurrCust.Set(V.DataTable.dtTemp(V.Local.iCnt).CURR_CUST!FieldValTrim)
+'	V.Local.dDateShipped.Set(V.DataTable.dtTemp(V.Local.iCnt).DATE_SHIPPED!FieldVal)
+'	V.Local.sNotes.Set(V.DataTable.dtTemp(V.Local.iCnt).NOTES!FieldValTrim)
+'	V.Local.sOrderNo.Set(V.DataTable.dtTemp(V.Local.iCnt).ORDER_NO!FieldValTrim)
+'	V.Local.sOrderSuffix.Set(V.DataTable.dtTemp(V.Local.iCnt).ORDER_SUFFIX!FieldValTrim)
+'	V.Local.sOrderLine.Set(V.DataTable.dtTemp(V.Local.iCnt).ORDER_LINE!FieldValTrim)
+'	V.Local.sPart.Set(V.DataTable.dtTemp(V.Local.iCnt).PART!FieldVal)
+'	V.Local.sLoc.Set(V.DataTable.dtTemp(V.Local.iCnt).LOCATION!FieldValTrim)
+'	V.Local.sDesc.Set(V.DataTable.dtTemp(V.Local.iCnt).DESCRIPTION!FieldValTrim)
+'	V.Local.sAltDesc.Set(V.DataTable.dtTemp(V.Local.iCnt).DESCRIPTION_2!FieldValTrim)
+'	'add row to dtserial
+'	
+'	F.Data.DataTable.AddRow("dtSerial", "SERIAL", V.Local.sSerial, "PART", V.Local.sPart, "LOCATION", V.Local.sLoc, "DESC", V.Local.sDesc, "ALT_DESC", V.Local.sAltDesc, "ORDER_NO", V.Local.sOrderNo, "ORDER_SUFFIX", V.Local.sOrderSuffix, "ORDER_LINE", V.Local.sOrderLine, "ORIG_CUST", V.Local.sOrigCust, "CURR_CUST", V.Local.sCurrCust, "DATE_SHIPPED", V.Local.dDateShipped, "NOTES", V.Local.sNotes)
+'F.Intrinsic.Control.Next(V.Local.iCnt)
+
+F.Data.DataTable.Merge("dtTemp", "dtSerial", True, 4)
+
+
+'close temp datatable
+F.Data.DataTable.Close("dtTemp")
+
+Gui.f_Main.GsGcInstrument.SetColumnProperty("gvSerial", "CURR_CUST_BRW", "Icon", "^")
+
+''Create dictionary for orig cust name
+'F.Data.Dictionary.CreateFromSQL("dictOrigCust", "con", "SELECT CUSTOMER, NAME_CUSTOMER FROM V_CUSTOMER_MASTER ORDER BY CUSTOMER")
+'F.Data.Dictionary.SetDefaultReturn("dictOrigCust", "")
+'F.Data.DataTable.FillFromDictionary("dtSerial", "dictOrigCust","ORIG_CUST", "ORIG_CUST_NAME")
+''close the dictionary
+'F.Data.Dictionary.Close("dictOrigCust")
+
+''create dictionary for curr cust name
+'F.Data.Dictionary.CreateFromSQL("dictCurrCust", "con", "SELECT CUSTOMER, NAME_CUSTOMER FROM V_CUSTOMER_MASTER ORDER BY CUSTOMER")
+'F.Data.Dictionary.SetDefaultReturn("dictCurrCust", "")
+'F.Data.DataTable.FillFromDictionary("dtSerial", "dictCurrCust","CURR_CUST", "CURR_CUST_NAME")
+''Close the dictionary
+'F.Data.Dictionary.Close("dictCurrCust")
+
+
+Gui.f_Main.GsGcInstrument.Visible(True)
+Gui.f_Main.GsGcInstrument.HideWait
+
+F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(ErrorMessage, "ErrorNumber", V.Ambient.ErrorNumber, "ErrorDescription", V.Ambient.ErrorDescription, "Subroutine", V.Ambient.CurrentSubroutine, "UNATTENDED", V.Global.bUnattended, "Project", "6581", "ProjectTitle", "Instrument Tracker", "Callback", "F_Main_UnLoad")
+F.Intrinsic.Control.EndTry
+Program.Sub.cmd_Refresh_Click.End
+
+Program.Sub.GsGcInstrument_RowCellClick.Start
+F.Intrinsic.Control.Try
+V.Local.iCnt.Declare(Long)
+V.Local.iRow.Declare(Long)
+V.Local.sCustomer.Declare(String)
+V.Local.sRet.Declare(String)
+V.Local.sSerial.Declare(String)
+V.Local.sPart.Declare(String)
+V.Local.sLoc.Declare(String)
+V.Local.sOrderNo.Declare(String)
+V.Local.sOrderSuffix.Declare(String)
+V.Local.sOrderLine.Declare(String)
+V.Local.sOrigCust.Declare(String)
+V.Local.sSQL.Declare(String)
+V.Local.sCustName.Declare(String)
+V.Local.sCustCity.Declare(String)
+V.Local.sCustState.Declare(String)
+v.Local.sCustZip.Declare(String)
+V.Local.sCustCountry.Declare(String)
+
+F.Intrinsic.Control.BlockEvents
+'set the row that was clicked
+V.Local.iRow.Set(V.Args.RowIndex)
+
+'check to make sure they selected the browser column
+F.Intrinsic.Control.If(V.Args.Column,=,"CURR_CUST_BRW")
+	'open the customer master browser
+	F.Intrinsic.UI.Browser(205,"", V.Local.sRet)
+	F.Intrinsic.Control.If(V.Local.sRet.Trim,<>,"***CANCEL***")
+		'split the values
+		F.Intrinsic.String.Split(V.Local.sRet, "*!*", V.Local.sRet)
+		
+		'set the customer variable
+		V.Local.sCustomer.Set(V.Local.sRet(0).Trim)
+		'pull the customer name 
+		V.Local.sCustName.Set(V.Local.sRet(1).Trim)
+		'pull the customer city, state,zip,country
+		V.Local.sCustCity.Set(V.Local.sRet(2).Trim)
+		V.Local.sCustState.Set(V.Local.sRet(3).Trim)
+		V.Local.sCustZip.Set(V.Local.sRet(4).Trim)
+		V.Local.sCustCountry.Set(V.Local.sRet(5).Trim)
+		
+		'set the datatable values
+		F.Data.DataTable.SetValue("dtSerial", V.Local.iRow, "CURR_CUST", V.Local.sCustomer.Trim, "CURR_CUST_NAME", V.Local.sCustName.Trim, "CURR_CITY", V.Local.sCustCity.Trim, "CURR_STATE", V.Local.sCustState.Trim, "CURR_ZIP", V.Local.sCustZip.Trim, "CURR_COUNTRY", V.Local.sCustCountry.Trim)	
+		
+		'get corresponding information to update the custom table
+		Gui.f_Main.GsGcInstrument.GetCellValueByColumnName("gvSerial", "SERIAL", V.Local.iRow, V.Local.sSerial)
+		Gui.f_Main.GsGcInstrument.GetCellValueByColumnName("gvSerial", "ORDER_NO", V.Local.iRow, V.Local.sOrderNo)
+		Gui.f_Main.GsGcInstrument.GetCellValueByColumnName("gvSerial", "ORDER_SUFFIX", V.Local.iRow, V.Local.sOrderSuffix)
+		Gui.f_Main.GsGcInstrument.GetCellValueByColumnName("gvSerial", "ORDER_LINE", V.Local.iRow, V.Local.sOrderLine)
+		Gui.f_Main.GsGcInstrument.GetCellValueByColumnName("gvSerial", "ORIG_CUST", V.Local.iRow, V.Local.sOrigCust)	
+		
+		'update the custom table
+		F.Intrinsic.String.Build("UPDATE GCG_6581_SERIALS SET CURR_CUST = '{0}', CURR_CITY = '{1}', CURR_STATE = '{2}', CURR_ZIP = '{3}', CURR_COUNTRY = '{4}', CURR_CUST_NAME = '{5}' WHERE SERIAL_NO = '{6}' AND ORDER_NO = '{7}' AND (LTRIM(RTRIM(ORDER_SUFFIX)) = '{8}' OR ORDER_SUFFIX IS NULL) AND (LTRIM(RTRIM(ORDER_LINE)) = '{9}' OR ORDER_LINE IS NULL) AND ORIG_CUST = '{10}'", V.Local.sCustomer.Trim, V.Local.sCustCity.Trim, V.Local.sCustState.Trim, V.Local.sCustZip.Trim, V.Local.sCustCountry.Trim, V.Local.sCustName.PSQLFriendly, V.Local.sSerial.Trim, V.Local.sOrderNo.Trim,V.Local.sOrderSuffix.Trim,V.Local.sOrderLine.Trim, V.Local.sOrigCust.Trim, V.Local.sSQL)
+		F.ODBC.Connection!con.Execute(V.Local.sSQL)
+	F.Intrinsic.Control.EndIf
+	
+'	F.Intrinsic.UI.InvokeWaitDialog("Refreshing Data...", "Please Wait")
+	'hide the grid during reload
+'	Gui.f_Main.GsGcInstrument.Visible(False)
+
+	'delete all the rows currently in the datatable
+'	F.Data.DataTable.DeleteRow("dtSerial")
+
+	'callsub to refresh the data
+'	F.Intrinsic.Control.CallSub(cmd_Refresh_Click)
+	'show the grid once reload is done
+'	Gui.f_Main.GsGcInstrument.Visible(True)
+
+
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.UnBlockEvents
+F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(ErrorMessage, "ErrorNumber", V.Ambient.ErrorNumber, "ErrorDescription", V.Ambient.ErrorDescription, "Subroutine", V.Ambient.CurrentSubroutine, "UNATTENDED", V.Global.bUnattended, "Project", "6581", "ProjectTitle", "Instrument Tracker", "Callback", "F_Main_UnLoad")
+F.Intrinsic.Control.EndTry
+Program.Sub.GsGcInstrument_RowCellClick.End
+
+Program.Sub.GsGcInstrument_CellValueChanged.Start
+F.Intrinsic.Control.Try
+V.Local.iCnt.Declare(Long)
+V.Local.iRow.Declare(Long)
+V.Local.sCustomer.Declare(String)
+V.Local.sRet.Declare(String)
+V.Local.sSerial.Declare(String)
+V.Local.sPart.Declare(String)
+V.Local.sLoc.Declare(String)
+V.Local.sOrderNo.Declare(String)
+V.Local.sOrderLine.Declare(String)
+V.Local.sOrigCust.Declare(String)
+V.Local.sSQL.Declare(String)
+V.Local.sNotes.Declare(String)
+V.Local.sCurrCust.Declare(String)
+V.Local.sCurrCustName.Declare(String)
+V.Local.sCurrCustCity.Declare(String)
+V.Local.sCurrCustState.Declare(String)
+V.Local.sCurrCustZip.Declare(String)
+V.Local.sCurrCustCountry.Declare(String)
+
+F.Intrinsic.Control.BlockEvents
+
+F.Intrinsic.Control.If(V.Args.Column,=,"NOTES")
+	V.Local.iRow.Set(V.Args.RowIndex)
+	'get corresponding information to update the custom table
+	Gui.f_Main.GsGcInstrument.GetCellValueByColumnName("gvSerial", "SERIAL", V.Local.iRow, V.Local.sSerial)
+	Gui.f_Main.GsGcInstrument.GetCellValueByColumnName("gvSerial", "ORDER_NO", V.Local.iRow, V.Local.sOrderNo)
+	Gui.f_Main.GsGcInstrument.GetCellValueByColumnName("gvSerial", "ORDER_LINE", V.Local.iRow, V.Local.sOrderLine)
+	Gui.f_Main.GsGcInstrument.GetCellValueByColumnName("gvSerial", "ORIG_CUST", V.Local.iRow, V.Local.sOrigCust)
+
+	
+	'remove any single quotes that may exist
+	F.Intrinsic.String.Replace(V.Args.Value,"'","''",V.Local.sNotes)
+		
+	'update the custom table
+	F.Intrinsic.String.Build("UPDATE GCG_6581_SERIALS SET NOTES = '{0}' WHERE SERIAL_NO = '{1}' AND ORDER_NO = '{2}' AND ORDER_LINE = '{3}' AND ORIG_CUST = '{4}'", V.Local.sNotes, V.Local.sSerial.Trim, V.Local.sOrderNo.Trim, V.Local.sOrderLine.Trim, V.Local.sOrigCust.Trim, V.Local.sSQL)
+	F.ODBC.Connection!con.Execute(V.Local.sSQL)
+F.Intrinsic.Control.ElseIf(V.Args.Column,=,"CURR_CUST")
+	V.Local.iRow.Set(V.Args.RowIndex)
+	V.Local.sCurrCust.Set(V.Args.Value)
+	'get corresponding information to update the custom table
+	Gui.f_Main.GsGcInstrument.GetCellValueByColumnName("gvSerial", "SERIAL", V.Local.iRow, V.Local.sSerial)
+	Gui.f_Main.GsGcInstrument.GetCellValueByColumnName("gvSerial", "ORDER_NO", V.Local.iRow, V.Local.sOrderNo)
+	Gui.f_Main.GsGcInstrument.GetCellValueByColumnName("gvSerial", "ORIG_CUST", V.Local.iRow, V.Local.sOrigCust)
+	
+	'update the custom table
+	F.Intrinsic.String.Build("UPDATE GCG_6581_SERIALS SET CURR_CUST = '{0}' WHERE SERIAL_NO = '{1}' AND ORDER_NO = '{2}' AND ORIG_CUST = '{3}'", V.Local.sCurrCust.Trim, V.Local.sSerial.Trim, V.Local.sOrderNo.Trim, V.Local.sOrigCust.Trim, V.Local.sSQL)
+	F.ODBC.Connection!con.Execute(V.Local.sSQL)
+F.Intrinsic.Control.ElseIf(V.Args.Column,=,"CURR_CUST_NAME")
+	V.Local.sCurrCustName.Set(V.Args.Value)
+	F.Intrinsic.String.Replace(V.Local.sCurrCustName,"'","''",V.Local.sNotes)
+	V.Local.iRow.Set(V.Args.RowIndex)
+	'get corresponding information to update the custom table
+	Gui.f_Main.GsGcInstrument.GetCellValueByColumnName("gvSerial", "SERIAL", V.Local.iRow, V.Local.sSerial)
+	Gui.f_Main.GsGcInstrument.GetCellValueByColumnName("gvSerial", "ORDER_NO", V.Local.iRow, V.Local.sOrderNo)
+	Gui.f_Main.GsGcInstrument.GetCellValueByColumnName("gvSerial", "ORIG_CUST", V.Local.iRow, V.Local.sOrigCust)
+	'update the custom table
+	F.Intrinsic.String.Build("UPDATE GCG_6581_SERIALS SET CURR_CUST_NAME = '{0}' WHERE SERIAL_NO = '{1}' AND ORDER_NO = '{2}' AND ORIG_CUST = '{3}'", V.Local.sCurrCustName.PSQLFriendly, V.Local.sSerial.Trim, V.Local.sOrderNo.Trim, V.Local.sOrigCust.Trim, V.Local.sSQL)
+	F.ODBC.Connection!con.Execute(V.Local.sSQL)
+f.Intrinsic.Control.ElseIf(V.Args.Column,=,"CURR_CITY")
+	V.Local.sCurrCustCity.Set(V.Args.Value)
+	V.Local.iRow.Set(V.Args.RowIndex)
+	'get corresponding information to update the custom table
+	Gui.f_Main.GsGcInstrument.GetCellValueByColumnName("gvSerial", "SERIAL", V.Local.iRow, V.Local.sSerial)
+	Gui.f_Main.GsGcInstrument.GetCellValueByColumnName("gvSerial", "ORDER_NO", V.Local.iRow, V.Local.sOrderNo)
+	Gui.f_Main.GsGcInstrument.GetCellValueByColumnName("gvSerial", "ORIG_CUST", V.Local.iRow, V.Local.sOrigCust)
+	
+	'update the custom table
+	F.Intrinsic.String.Build("UPDATE GCG_6581_SERIALS SET CURR_CITY = '{0}' WHERE SERIAL_NO = '{1}' AND ORDER_NO = '{2}' AND ORIG_CUST = '{3}'", V.Local.sCurrCustCity.Trim, V.Local.sSerial.Trim, V.Local.sOrderNo.Trim, V.Local.sOrigCust.Trim, V.Local.sSQL)
+	F.ODBC.Connection!con.Execute(V.Local.sSQL)
+F.Intrinsic.Control.ElseIf(V.Args.Column,=,"CURR_STATE")
+	V.Local.sCurrCustState.Set(V.Args.Value)
+	V.Local.iRow.Set(V.Args.RowIndex)
+	'get corresponding information to update the custom table
+	Gui.f_Main.GsGcInstrument.GetCellValueByColumnName("gvSerial", "SERIAL", V.Local.iRow, V.Local.sSerial)
+	Gui.f_Main.GsGcInstrument.GetCellValueByColumnName("gvSerial", "ORDER_NO", V.Local.iRow, V.Local.sOrderNo)
+	Gui.f_Main.GsGcInstrument.GetCellValueByColumnName("gvSerial", "ORIG_CUST", V.Local.iRow, V.Local.sOrigCust)
+	
+	'update the custom table
+	F.Intrinsic.String.Build("UPDATE GCG_6581_SERIALS SET CURR_STATE = '{0}' WHERE SERIAL_NO = '{1}' AND ORDER_NO = '{2}' AND ORIG_CUST = '{3}'", V.Local.sCurrCustState.Trim, V.Local.sSerial.Trim, V.Local.sOrderNo.Trim, V.Local.sOrigCust.Trim, V.Local.sSQL)
+	F.ODBC.Connection!con.Execute(V.Local.sSQL)
+F.Intrinsic.Control.ElseIf(V.Args.Column,=,"CURR_ZIP")
+	V.Local.sCurrCustZip.Set(V.Args.Value)
+	V.Local.iRow.Set(V.Args.RowIndex)
+	'get corresponding information to update the custom table
+	Gui.f_Main.GsGcInstrument.GetCellValueByColumnName("gvSerial", "SERIAL", V.Local.iRow, V.Local.sSerial)
+	Gui.f_Main.GsGcInstrument.GetCellValueByColumnName("gvSerial", "ORDER_NO", V.Local.iRow, V.Local.sOrderNo)
+	Gui.f_Main.GsGcInstrument.GetCellValueByColumnName("gvSerial", "ORIG_CUST", V.Local.iRow, V.Local.sOrigCust)
+	
+	'update the custom table
+	F.Intrinsic.String.Build("UPDATE GCG_6581_SERIALS SET CURR_ZIP = '{0}' WHERE SERIAL_NO = '{1}' AND ORDER_NO = '{2}' AND ORIG_CUST = '{3}'", V.Local.sCurrCustZip.Trim, V.Local.sSerial.Trim, V.Local.sOrderNo.Trim, V.Local.sOrigCust.Trim, V.Local.sSQL)
+	F.ODBC.Connection!con.Execute(V.Local.sSQL)
+F.Intrinsic.Control.ElseIf(V.Args.Column,=,"CURR_COUNTRY")
+	V.Local.sCurrCustCountry.Set(V.Args.Value)
+	V.Local.iRow.Set(V.Args.RowIndex)
+	'get corresponding information to update the custom table
+	Gui.f_Main.GsGcInstrument.GetCellValueByColumnName("gvSerial", "SERIAL", V.Local.iRow, V.Local.sSerial)
+	Gui.f_Main.GsGcInstrument.GetCellValueByColumnName("gvSerial", "ORDER_NO", V.Local.iRow, V.Local.sOrderNo)
+	Gui.f_Main.GsGcInstrument.GetCellValueByColumnName("gvSerial", "ORIG_CUST", V.Local.iRow, V.Local.sOrigCust)
+	
+	'update the custom table
+	F.Intrinsic.String.Build("UPDATE GCG_6581_SERIALS SET CURR_COUNTRY = '{0}' WHERE SERIAL_NO = '{1}' AND ORDER_NO = '{2}' AND ORIG_CUST = '{3}'", V.Local.sCurrCustCountry.Trim, V.Local.sSerial.Trim, V.Local.sOrderNo.Trim, V.Local.sOrigCust.Trim, V.Local.sSQL)
+	F.ODBC.Connection!con.Execute(V.Local.sSQL)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.UnBlockEvents
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(ErrorMessage, "ErrorNumber", V.Ambient.ErrorNumber, "ErrorDescription", V.Ambient.ErrorDescription, "Subroutine", V.Ambient.CurrentSubroutine, "UNATTENDED", V.Global.bUnattended, "Project", "6581", "ProjectTitle", "Instrument Tracker", "Callback", "F_Main_UnLoad")
+F.Intrinsic.Control.EndTry
+Program.Sub.GsGcInstrument_CellValueChanged.End
+
+Program.Sub.Serialize.Start
+F.Intrinsic.Control.Try
+V.Local.sSerialize.Declare(String)
+
+F.Intrinsic.Control.If(V.Global.bLoadData,=,True)
+
+	Gui.f_Main.GsGcInstrument.Serialize("gvSerial", V.Local.sSerialize)
+	F.Global.Registry.AddValue(V.Caller.User,V.Caller.CompanyCode,"gvSerial",6581,1000,False,"Serialize",False,0,-999.0,1/1/1980,12:00:00 AM,V.Local.sSerialize)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(ErrorMessage, "ErrorNumber", V.Ambient.ErrorNumber, "ErrorDescription", V.Ambient.ErrorDescription, "Subroutine", V.Ambient.CurrentSubroutine, "UNATTENDED", V.Global.bUnattended, "Project", "6581", "ProjectTitle", "Instrument Tracker", "Callback", "F_Main_UnLoad")
+F.Intrinsic.Control.EndTry
+Program.Sub.Serialize.End
+
+Program.Sub.Deserialize.Start
+F.Intrinsic.Control.Try
+V.Local.sSerialize.Declare(String)
+
+F.Global.Registry.ReadValue(V.Caller.User,V.Caller.CompanyCode,"gvSerial",6581,0,5,"",V.Local.sSerialize)
+F.Intrinsic.Control.If(V.Local.sSerialize,<>,"")
+	F.ODBC.Connection!common.OpenConnection(V.Ambient.Ccon,V.Ambient.Cuser,V.Ambient.Cpass)
+	F.ODBC.Connection!common.Execute("Delete From Gs_Registry Where Reg_ID = 6581 And Seq < 1000;")
+	F.ODBC.Connection!common.Close
+F.Intrinsic.Control.EndIf
+
+F.Global.Registry.ReadValue(V.Caller.User,V.Caller.CompanyCode, "gvSerial",6581,1000,6,"",V.Local.sSerialize)
+F.Intrinsic.Control.If(V.Local.sSerialize.Trim,<>,"")
+	Gui.f_Main.GsGcInstrument.Deserialize(V.Local.sSerialize)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(ErrorMessage, "ErrorNumber", V.Ambient.ErrorNumber, "ErrorDescription", V.Ambient.ErrorDescription, "Subroutine", V.Ambient.CurrentSubroutine, "UNATTENDED", V.Global.bUnattended, "Project", "6581", "ProjectTitle", "Instrument Tracker", "Callback", "F_Main_UnLoad")
+F.Intrinsic.Control.EndTry
+Program.Sub.Deserialize.End
+
+Program.Sub.F_Main_UnLoad.Start
+F.Intrinsic.Control.Try
+
+
+F.Intrinsic.Control.CallSub(Serialize)
+
+
+F.ODBC.Connection!con.Close
+
+F.Intrinsic.Control.End
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(ErrorMessage, "ErrorNumber", V.Ambient.ErrorNumber, "ErrorDescription", V.Ambient.ErrorDescription, "Subroutine", V.Ambient.CurrentSubroutine, "UNATTENDED", V.Global.bUnattended, "Project", "6581", "ProjectTitle", "Instrument Tracker", "Callback", "F_Main_UnLoad")
+F.Intrinsic.Control.EndTry
+Program.Sub.F_Main_UnLoad.End
+
+Program.Sub.ErrorMessage.Start
+'basic error message for replacing catch block
+'this is really just for when printing the message and ending program
+'pass error number, error description, current subroutine
+'optional callback sub, this will be called before ending
+'optional unattended parameters, those subs may not exist if not using them but won't be called
+F.Intrinsic.Control.Try
+
+V.Local.iError.Declare(Long)
+V.Local.sErrorDescription.Declare(String)
+V.Local.sSubroutine.Declare(String)
+V.Local.sError.Declare(String)
+V.Local.bExists.Declare(Boolean)
+V.Local.sCallback.Declare(String)
+
+V.Local.iError.Set(V.Args.ErrorNumber)
+V.Local.sErrorDescription.Set(V.Args.ErrorDescription)
+V.Local.sSubroutine.Set(V.Args.Subroutine)
+
+'make sure we aren't in an error loop
+F.Intrinsic.Control.If(V.Global.bError)
+	F.Intrinsic.Control.End
+
+F.Intrinsic.Control.EndIf
+V.Global.bError.Set(True)
+
+F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}", V.Caller.ScriptFile, V.Ambient.Newline, V.Local.sSubroutine, V.Local.iError, V.Local.sErrorDescription, V.Ambient.GABVersion, V.Local.sError)
+
+F.Intrinsic.Variable.ArgExists("UNATTENDED", V.Local.bExists)
+F.Intrinsic.Control.If(V.Local.bExists)
+	F.Intrinsic.Control.If(V.Args.UNATTENDED)
+		F.Intrinsic.Control.CallSub(UnattendedErrorMessage, "MESSAGE", V.Local.sError, "PROJECT", V.Args.PROJECT, "PROJECTTITLE", V.Args.PROJECTTITLE)
+	F.Intrinsic.Control.Else
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.Else
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Variable.ArgExists("Callback", V.Local.bExists)
+F.Intrinsic.Control.If(V.Local.bExists)
+	V.Local.sCallback.Set(V.Args.Callback.Trim)
+	F.Intrinsic.Control.CallSub(V.Local.sCallback)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.End
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+
+F.Intrinsic.Control.EndTry
+Program.Sub.ErrorMessage.End
+
+Program.Sub.Comments.Start
+${$5$}$3.0.0.0$}$1
+${$6$}$acollins$}$20220407124048780$}$h98hERc2yV72q0GaUGlwSaoK/aefTdVk/XotSp2jZHgRfmH/44BxBeeVzs4BlEzlVmw7PRZxyFdYJKy05ODxAg==
+Program.Sub.Comments.End
