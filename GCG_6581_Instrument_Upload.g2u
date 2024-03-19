@@ -1,0 +1,396 @@
+﻿Program.Sub.ScreenSU.Start
+Gui.f_Main..Create(BaseForm)
+Gui.f_Main..Caption("Instrument Upload")
+Gui.f_Main..Size(406,158)
+Gui.f_Main..MinX(0)
+Gui.f_Main..MinY(0)
+Gui.f_Main..Position(0,0)
+Gui.f_Main..AlwaysOnTop(False)
+Gui.f_Main..FontName("Tahoma")
+Gui.f_Main..FontSize(8.25)
+Gui.f_Main..ControlBox(True)
+Gui.f_Main..MaxButton(False)
+Gui.f_Main..MinButton(True)
+Gui.f_Main..MousePointer(0)
+Gui.f_Main..Moveable(True)
+Gui.f_Main..Sizeable(False)
+Gui.f_Main..ShowInTaskBar(True)
+Gui.f_Main..TitleBar(True)
+Gui.f_Main..Event(UnLoad,F_Main_UnLoad)
+Gui.f_Main.lblFile.Create(Label,"Select CSV File or XLSX File for Upload:",True,185,13,0,5,10,True,0,"Tahoma",8.25,,0,0)
+Gui.f_Main.lblFile.BorderStyle(0)
+Gui.f_Main.txtFile.Create(TextBox,"",True,365,20,0,5,32,True,0,"Tahoma",8.25,,1)
+Gui.f_Main.cmdBrowser.Create(Button)
+Gui.f_Main.cmdBrowser.Enabled(True)
+Gui.f_Main.cmdBrowser.Visible(True)
+Gui.f_Main.cmdBrowser.Zorder(0)
+Gui.f_Main.cmdBrowser.Size(25,23)
+Gui.f_Main.cmdBrowser.Position(372,30)
+Gui.f_Main.cmdBrowser.Caption("^")
+Gui.f_Main.cmdBrowser.FontName("Tahoma")
+Gui.f_Main.cmdBrowser.FontSize(8.25)
+Gui.f_Main.cmdBrowser.Event(Click,cmdBrowser_Click)
+Gui.f_Main.cmdUpload.Create(Button)
+Gui.f_Main.cmdUpload.Enabled(True)
+Gui.f_Main.cmdUpload.Visible(True)
+Gui.f_Main.cmdUpload.Zorder(0)
+Gui.f_Main.cmdUpload.Size(75,23)
+Gui.f_Main.cmdUpload.Position(322,97)
+Gui.f_Main.cmdUpload.Caption("Upload")
+Gui.f_Main.cmdUpload.FontName("Tahoma")
+Gui.f_Main.cmdUpload.FontSize(8.25)
+Gui.f_Main.cmdUpload.Event(Click,cmdUpload_Click)
+Gui.f_Main.cmdCancel.Create(Button)
+Gui.f_Main.cmdCancel.Enabled(True)
+Gui.f_Main.cmdCancel.Visible(True)
+Gui.f_Main.cmdCancel.Zorder(0)
+Gui.f_Main.cmdCancel.Size(75,23)
+Gui.f_Main.cmdCancel.Position(5,97)
+Gui.f_Main.cmdCancel.Caption("Cancel")
+Gui.f_Main.cmdCancel.FontName("Tahoma")
+Gui.f_Main.cmdCancel.FontSize(8.25)
+Gui.f_Main.cmdCancel.Event(Click,F_Main_UnLoad)
+Gui.f_Main.chkHeaders.Create(CheckBox)
+Gui.f_Main.chkHeaders.Enabled(True)
+Gui.f_Main.chkHeaders.Visible(True)
+Gui.f_Main.chkHeaders.Zorder(0)
+Gui.f_Main.chkHeaders.Size(138,20)
+Gui.f_Main.chkHeaders.Position(5,63)
+Gui.f_Main.chkHeaders.Caption("File Includes Headers")
+Gui.f_Main.chkHeaders.FontName("Tahoma")
+Gui.f_Main.chkHeaders.FontSize(8.25)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+V.Global.bError.Declare(Boolean)
+V.Global.bUnattended.Declare(Boolean)
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.Try
+Function.Intrinsic.UI.UsePixels ' Allows you to use Pixels instead of Twips throughout
+
+'open the connection
+F.ODBC.Connection!con.OpenConnection(V.Ambient.PDSN, V.Ambient.PUser, V.Ambient.PPass,10000)
+
+'show the form
+Gui.f_Main..Show
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(ErrorMessage, "ErrorNumber", V.Ambient.ErrorNumber, "ErrorDescription", V.Ambient.ErrorDescription, "Subroutine", V.Ambient.CurrentSubroutine, "UNATTENDED", V.Global.bUnattended, "Project", "6581", "ProjectTitle", "Instrument Upload", "Callback", "F_Main_UnLoad")
+F.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.cmdBrowser_Click.Start
+F.Intrinsic.Control.Try
+V.Local.sFileName.Declare(String)
+
+'show browser for file
+F.Intrinsic.UI.ShowOpenFileDialog("", "","", V.Local.sFileName)
+F.Intrinsic.Control.If(V.Local.sFileName,<>,"***CANCEL***")
+	'copy the file name to the text box
+	Gui.f_Main.txtFile.Text(V.Local.sFileName)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(ErrorMessage, "ErrorNumber", V.Ambient.ErrorNumber, "ErrorDescription", V.Ambient.ErrorDescription, "Subroutine", V.Ambient.CurrentSubroutine, "UNATTENDED", V.Global.bUnattended, "Project", "6581", "ProjectTitle", "Instrument Upload", "Callback", "F_Main_UnLoad")
+F.Intrinsic.Control.EndTry
+Program.Sub.cmdBrowser_Click.End
+
+Program.Sub.cmdUpload_Click.Start
+F.Intrinsic.Control.Try
+V.Local.bExcelFile.Declare(Boolean, False)
+V.Local.bCSVFile.Declare(Boolean, False)
+V.Local.sFQP.Declare(String)
+
+V.Local.sFQP.Set(V.Screen.f_Main!txtFile.Text)
+	
+'check to make sure the textbox isn't empty
+F.Intrinsic.Control.If(V.Local.sFQP.Trim,<>,"")
+	'check to see if the file is a CSV or xlsx
+	F.Intrinsic.String.IsInString(V.Local.sFQP.Trim,".csv", True, V.Local.bCSVFile)
+	F.Intrinsic.String.IsInString(V.Local.sFQP.Trim, ".xlsx", True, V.Local.bExcelFile)
+	F.Intrinsic.Control.If(V.Local.bExcelFile,=,True, "AND", V.Local.bCSVFile,=,False)
+	
+		F.Intrinsic.Control.CallSub(ProcessExcelData)
+	F.Intrinsic.Control.ElseIf(V.Local.bCSVFile,=,True, "AND", V.Local.bExcelFile,=,False)
+		F.Intrinsic.Control.CallSub(ProcessCSVData)
+	F.Intrinsic.Control.EndIf
+	
+F.Intrinsic.Control.Else
+	F.Intrinsic.UI.Msgbox("You must select a CSV before you can continue!", "Required Field")
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(ErrorMessage, "ErrorNumber", V.Ambient.ErrorNumber, "ErrorDescription", V.Ambient.ErrorDescription, "Subroutine", V.Ambient.CurrentSubroutine, "UNATTENDED", V.Global.bUnattended, "Project", "6581", "ProjectTitle", "Instrument Upload", "Callback", "F_Main_UnLoad")
+F.Intrinsic.Control.EndTry
+Program.Sub.cmdUpload_Click.End
+
+Program.Sub.ProcessExcelData.Start
+F.Intrinsic.Control.Try
+
+#Region "Variables"
+V.Local.bExcelFile.Declare(Boolean)
+V.Local.bCSVFile.Declare(Boolean)
+V.Local.bExcelExists.Declare(Boolean)
+V.Local.dDateShipped.Declare(Date)
+V.Local.fHeight.Declare(Float)
+V.Local.iCnt.Declare(Long)
+V.Local.iRowCnt.Declare(Long)
+V.Local.iLoopCount.Declare(Long)
+V.Local.sDateShipped.Declare(String)
+V.Local.sFQP.Declare(String)
+V.Local.sOrderNo.Declare(String)
+V.Local.sOrderSuffix.Declare(String)
+V.Local.sOrderLine.Declare(String)
+V.Local.sFileContents.Declare(String)
+V.Local.sRowContents.Declare(String)
+V.Local.sData.Declare(String)
+V.Local.sOrigCust.Declare(String)
+V.Local.sOrigCustName.Declare(String)
+V.Local.sOrigCity.Declare(String)
+V.Local.sOrigState.Declare(String)
+V.Local.sOrigZip.Declare(String)
+V.Local.sOrigCountry.Declare(String)
+V.Local.sCurrCust.Declare(String)
+V.Local.sCurrCustName.Declare(String)
+V.Local.sCurrCity.Declare(String)
+V.Local.sCurrState.Declare(String)
+V.Local.sCurrZip.Declare(String)
+V.Local.sCurrCountry.Declare(String)
+V.Local.sSeries.Declare(String)
+V.Local.sSize.Declare(String)
+V.Local.sWoodType.Declare(String)
+V.Local.sResonatorType.Declare(String)
+V.Local.sResonatorColor.Declare(String)
+V.Local.sKeyboard.Declare(String)
+V.Local.sFrequency.Declare(String)
+V.Local.sVibeCord.Declare(String)
+V.Local.sVibeMotorVolt.Declare(String)
+V.Local.sNotes.Declare(String)
+V.Local.sSerial.Declare(String)
+V.Local.sTemp.Declare(String)
+
+#End Region 'Variables
+
+
+F.Intrinsic.UI.InvokeWaitDialog("Uploading records to table...", "Please Wait")
+
+V.Local.sFQP.Set(V.Screen.f_Main!txtFile.Text)
+'check to see if datatable exists. If it does, delete it
+F.Intrinsic.Control.If(V.DataTable.dtInstruments.Exists)
+	F.Data.DataTable.Close("dtInstruments")
+F.Intrinsic.Control.EndIf
+
+''check to see if excel is installed
+F.Automation.MSExcel.CheckPresence(V.Local.bExcelExists)
+F.Intrinsic.Control.If(V.Local.bExcelExists,=,True)
+	'check to see if the file is xls or csv
+	
+	'read the file using excel function
+	F.Automation.MSExcel.ReadSpreadsheet(V.Local.sFQP,V.Local.sFileContents)
+	F.Intrinsic.Control.If(V.Local.sFileContents.Trim,<>,"")
+
+		F.Intrinsic.String.Replace(V.Local.sFileContents, V.Ambient.NewLine, "", V.Local.sFileContents)
+		
+		'check to see if the file includes headers
+		F.Intrinsic.Control.If(V.Screen.f_Main!chkHeaders.Value,=,1)
+			F.Intrinsic.String.Split(V.Local.sFileContents,"$!$", V.Local.sFileContents)
+			V.Local.sFileContents.RedimPreserve(0, V.Local.sFileContents.UBound)
+			V.Local.sFileContents(0).Set("**!!!***")
+			F.Intrinsic.String.Join(V.Local.sFileContents, "$!$", V.Local.sFileContents)
+			F.Intrinsic.String.Replace(V.Local.sFileContents, "**!!!***$!$", "", V.Local.sFileContents)
+		F.Intrinsic.Control.EndIf
+		
+		F.Data.DataTable.CreateFromString("dtInstruments", V.Local.sFileContents, "SERIAL_NO*!*ORDER_NO*!*ORDER_LINE*!*ORIG_CUST*!*ORIG_CUST_NAME*!*ORIG_CITY*!*ORIG_STATE*!*ORIG_ZIP*!*ORIG_COUNTRY*!*CURR_CUST*!*CURR_CUST_NAME*!*CURR_CITY*!*CURR_STATE*!*CURR_ZIP*!*CURR_COUNTRY*!*DATE_SHIPPED*!*SERIES_INFO*!*SIZE_INFO*!*WOOD_TYPE*!*RESONATOR_TYPE*!*RESONATOR_COLOR*!*KEYBOARD_INFO*!*FREQUENCY_INFO*!*HEIGHT_INFO*!*VIBE_CORD*!*VIBE_MOTOR_VOLT*!*NOTES", "STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*DATE*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING", "*!*", "$!$",True)
+
+	
+		F.Intrinsic.Control.For(V.Local.iCnt, 0, V.DataTable.dtInstruments.RowCount--,1)
+			V.Local.sOrderNo.Set(V.DataTable.dtInstruments(V.Local.iCnt).ORDER_NO!FieldValTrim)
+			F.Intrinsic.String.LPad(V.Local.sOrderNo, "0", 7, V.Local.sOrderNo)
+			V.Local.sOrderLine.Set(V.DataTable.dtInstruments(V.Local.iCnt).ORDER_LINE!FieldValTrim)
+			F.Intrinsic.String.LPad(V.Local.sOrderLine, "0", 3,V.Local.sOrderLine)
+			F.Intrinsic.String.RPad(V.Local.sOrderLine, "0", 4, V.Local.sOrderLine)
+			F.Data.DataTable.SetValue("dtInstruments", V.Local.iCnt, "ORDER_NO", V.Local.sOrderNo.Trim, "ORDER_LINE", V.Local.sOrderLine.Trim)
+		F.Intrinsic.Control.Next(V.Local.iCnt)
+		
+		F.Intrinsic.Control.If(V.DataTable.dtTemp.Exists)
+			F.Data.DataTable.Close("dtTemp")
+		F.Intrinsic.Control.EndIf
+		'query the table to see if there are records already
+		F.Data.DataTable.CreateFromSQL("dtTemp", "con", "SELECT * FROM GCG_6581_SERIALS", True)
+		F.Intrinsic.Control.If(V.DataTable.dtTemp.RowCount--,>,-1)
+			'save the records to the database
+			F.Data.DataTable.SaveToDB("dtInstruments", "con", "GCG_6581_SERIALS", "SERIAL_NO*!*ORDER_NO*!*ORDER_LINE",256)
+		F.Intrinsic.Control.Else
+			F.Data.DataTable.SaveToDB("dtInstruments", "con", "GCG_6581_SERIALS", "SERIAL_NO*!*ORDER_NO*!*ORDER_LINE", 128)
+		F.Intrinsic.Control.EndIf
+		
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.Else
+	F.Intrinsic.UI.Msgbox("Excel is not installed on the machine. You will need to upload the data as a CSV. Please try again!")
+	F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.EndIf
+F.Intrinsic.UI.CloseWaitDialog
+
+F.Intrinsic.UI.Msgbox("Instruments Successfully Uploaded!", "Upload Complete")
+Gui.f_Main.txtFile.Text("")
+F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(ErrorMessage, "ErrorNumber", V.Ambient.ErrorNumber, "ErrorDescription", V.Ambient.ErrorDescription, "Subroutine", V.Ambient.CurrentSubroutine, "UNATTENDED", V.Global.bUnattended, "Project", "6581", "ProjectTitle", "Instrument Upload", "Callback", "F_Main_UnLoad")
+F.Intrinsic.Control.EndTry
+Program.Sub.ProcessExcelData.End
+
+Program.Sub.ProcessCSVData.Start
+F.Intrinsic.Control.Try
+V.Local.iCnt.Declare(Long)
+V.Local.sFQP.Declare(String)
+V.Local.sOrderNo.Declare(String)
+V.Local.sCurrCust.Declare(String)
+V.Local.sOrigCust.Declare(String)
+V.Local.sFileContents.Declare(String)
+V.Local.sOrderLine.Declare(String)
+F.Intrinsic.UI.InvokeWaitDialog("Uploading records to table...", "Please Wait")
+
+V.Local.sFQP.Set(V.Screen.f_Main!txtFile.Text)
+'check to see if datatable exists. If it does, delete it
+F.Intrinsic.Control.If(V.DataTable.dtInstruments.Exists)
+	F.Data.DataTable.Close("dtInstruments")
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.File.File2String(V.Local.sFQP, V.Local.sFileContents)
+
+'check to see if the file includes headers
+F.Intrinsic.Control.If(V.Screen.f_Main!chkHeaders.Value,=,1)
+	F.Intrinsic.String.Split(V.Local.sFileContents,V.Ambient.NewLine, V.Local.sFileContents)
+	V.Local.sFileContents.RedimPreserve(0, V.Local.sFileContents.UBound)
+	V.Local.sFileContents(0).Set("**!!!***")
+	F.Intrinsic.String.Join(V.Local.sFileContents, "$!$", V.Local.sFileContents)
+	F.Intrinsic.String.Replace(V.Local.sFileContents, "**!!!***$!$", "", V.Local.sFileContents)
+	F.Intrinsic.String.Replace(V.Local.sFileContents, "$!$", V.Ambient.NewLine, V.Local.sFileContents)
+	F.Intrinsic.File.String2File(V.Local.sFQP, V.Local.sFileContents)
+F.Intrinsic.Control.EndIf
+
+'create datatable from CSV
+F.Data.DataTable.CreateFromCSV("dtInstruments", V.Local.sFQP, "SERIAL_NO*!*ORDER_NO*!*ORDER_LINE*!*ORIG_CUST*!*ORIG_CUST_NAME*!*ORIG_CITY*!*ORIG_STATE*!*ORIG_ZIP*!*ORIG_COUNTRY*!*CURR_CUST*!*CURR_CUST_NAME*!*CURR_CITY*!*CURR_STATE*!*CURR_ZIP*!*CURR_COUNTRY*!*DATE_SHIPPED*!*SERIES_INFO*!*SIZE_INFO*!*WOOD_TYPE*!*RESONATOR_TYPE*!*RESONATOR_COLOR*!*KEYBOARD_INFO*!*FREQUENCY_INFO*!*HEIGHT_INFO*!*VIBE_CORD*!*VIBE_MOTOR_VOLT*!*NOTES", "STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*DATE*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING", True)
+
+'F.Data.DataTable.CreateFromString("dtInstruments", V.Local.sFileContents, "SERIAL_NO*!*ORDER_NO*!*ORIG_CUST*!*ORIG_CUST_NAME*!*ORIG_CITY*!*ORIG_STATE*!*ORIG_ZIP*!*ORIG_COUNTRY*!*CURR_CUST*!*CURR_CUST_NAME*!*CURR_CITY*!*CURR_STATE*!*CURR_ZIP*!*CURR_COUNTRY*!*DATE_SHIPPED*!*SERIES_INFO*!*SIZE_INFO*!*WOOD_TYPE*!*RESONATOR_TYPE*!*RESONATOR_COLOR*!*KEYBOARD_INFO*!*FREQUENCY_INFO*!*HEIGHT_INFO*!*VIBE_CORD*!*VIBE_MOTOR_VOLT*!*NOTES", "STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*DATE*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING*!*STRING", ",", "$!$",True)
+
+'format sales order number and order line to make sure they're in the right format
+F.Intrinsic.Control.For(V.Local.iCnt, 0, V.DataTable.dtInstruments.RowCount--,1)
+	V.Local.sOrderNo.Set(V.DataTable.dtInstruments(V.Local.iCnt).ORDER_NO!FieldValTrim)
+	F.Intrinsic.String.LPad(V.Local.sOrderNo, "0", 7, V.Local.sOrderNo)
+	V.Local.sOrderLine.Set(V.DataTable.dtInstruments(V.Local.iCnt).ORDER_LINE!FieldValTrim)
+	F.Intrinsic.String.LPad(V.Local.sOrderLine, "0", 3, V.Local.sOrderLine)
+	F.Intrinsic.String.RPad(V.Local.sOrderLine, "0", 4, V.Local.sOrderLine)
+	V.Local.sOrigCust.Set(V.DataTable.dtInstruments(V.Local.iCnt).ORIG_CUST!FieldValTrim)
+	F.Intrinsic.Control.If(V.Local.sOrigCust.Trim,<>,"")
+		F.Intrinsic.String.LPad(V.Local.sOrigCust.Trim, "0",6, V.Local.sOrigCust)
+	F.Intrinsic.Control.EndIf
+	V.Local.sCurrCust.Set(V.DataTable.dtInstruments(V.Local.iCnt).CURR_CUST!FieldValTrim)
+	F.Intrinsic.Control.If(V.Local.sCurrCust.Trim,<>,"")
+		F.Intrinsic.String.LPad(V.Local.sCurrCust.Trim, "0", 6, V.Local.sCurrCust)
+	F.Intrinsic.Control.EndIf
+
+	F.Data.DataTable.SetValue("dtInstruments", V.Local.iCnt, "ORDER_NO", V.Local.sOrderNo.Trim, "ORDER_LINE", V.Local.sOrderLine.Trim, "ORIG_CUST", V.Local.sOrigCust.Trim, "CURR_CUST", V.Local.sCurrCust.Trim)
+F.Intrinsic.Control.Next(V.Local.iCnt)
+
+F.Intrinsic.Control.If(V.DataTable.dtTemp.Exists)
+	F.Data.DataTable.Close("dtTemp")
+F.Intrinsic.Control.EndIf
+
+
+'query the table to see if there are records already
+F.Data.DataTable.CreateFromSQL("dtTemp", "con", "SELECT * FROM GCG_6581_SERIALS", True)
+F.Intrinsic.Control.If(V.DataTable.dtTemp.RowCount--,>,-1)
+	'save the records to the database
+	F.Data.DataTable.SaveToDB("dtInstruments", "con", "GCG_6581_SERIALS", "SERIAL_NO*!*ORDER_NO*!*ORDER_LINE",256)
+F.Intrinsic.Control.Else
+	F.Data.DataTable.SaveToDB("dtInstruments", "con", "GCG_6581_SERIALS", "SERIAL_NO*!*ORDER_NO*!*ORDER_LINE", 128)
+F.Intrinsic.Control.EndIf
+
+
+F.Intrinsic.UI.CloseWaitDialog
+
+F.Intrinsic.UI.Msgbox("Instruments Successfully Uploaded!", "Upload Complete")
+Gui.f_Main.txtFile.Text("")
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(ErrorMessage, "ErrorNumber", V.Ambient.ErrorNumber, "ErrorDescription", V.Ambient.ErrorDescription, "Subroutine", V.Ambient.CurrentSubroutine, "UNATTENDED", V.Global.bUnattended, "Project", "6581", "ProjectTitle", "Instrument Upload", "Callback", "F_Main_UnLoad")
+F.Intrinsic.Control.EndTry
+Program.Sub.ProcessCSVData.End
+
+Program.Sub.F_Main_UnLoad.Start
+F.Intrinsic.Control.Try
+
+F.ODBC.Connection!con.Close
+
+F.Intrinsic.Control.End
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.Control.CallSub(ErrorMessage, "ErrorNumber", V.Ambient.ErrorNumber, "ErrorDescription", V.Ambient.ErrorDescription, "Subroutine", V.Ambient.CurrentSubroutine, "UNATTENDED", V.Global.bUnattended, "Project", "6581", "ProjectTitle", "Instrument Upload", "Callback", "F_Main_UnLoad")
+F.Intrinsic.Control.EndTry
+Program.Sub.F_Main_UnLoad.End
+
+Program.Sub.ErrorMessage.Start
+'basic error message for replacing catch block
+'this is really just for when printing the message and ending program
+'pass error number, error description, current subroutine
+'optional callback sub, this will be called before ending
+'optional unattended parameters, those subs may not exist if not using them but won't be called
+F.Intrinsic.Control.Try
+
+V.Local.iError.Declare(Long)
+V.Local.sErrorDescription.Declare(String)
+V.Local.sSubroutine.Declare(String)
+V.Local.sError.Declare(String)
+V.Local.bExists.Declare(Boolean)
+V.Local.sCallback.Declare(String)
+
+V.Local.iError.Set(V.Args.ErrorNumber)
+V.Local.sErrorDescription.Set(V.Args.ErrorDescription)
+V.Local.sSubroutine.Set(V.Args.Subroutine)
+
+'make sure we aren't in an error loop
+F.Intrinsic.Control.If(V.Global.bError)
+	F.Intrinsic.Control.End
+
+F.Intrinsic.Control.EndIf
+V.Global.bError.Set(True)
+
+F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}", V.Caller.ScriptFile, V.Ambient.Newline, V.Local.sSubroutine, V.Local.iError, V.Local.sErrorDescription, V.Ambient.GABVersion, V.Local.sError)
+
+F.Intrinsic.Variable.ArgExists("UNATTENDED", V.Local.bExists)
+F.Intrinsic.Control.If(V.Local.bExists)
+	F.Intrinsic.Control.If(V.Args.UNATTENDED)
+		F.Intrinsic.Control.CallSub(UnattendedErrorMessage, "MESSAGE", V.Local.sError, "PROJECT", V.Args.PROJECT, "PROJECTTITLE", V.Args.PROJECTTITLE)
+	F.Intrinsic.Control.Else
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.Else
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Variable.ArgExists("Callback", V.Local.bExists)
+F.Intrinsic.Control.If(V.Local.bExists)
+	V.Local.sCallback.Set(V.Args.Callback.Trim)
+	F.Intrinsic.Control.CallSub(V.Local.sCallback)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.End
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+
+F.Intrinsic.Control.EndTry
+Program.Sub.ErrorMessage.End
+
+Program.Sub.Comments.Start
+${$5$}$2.2020.1.105$}$1
+${$6$}$acollins$}$20220323124519145$}$h98hERc2yV72q0GaUGlwSaoK/aefTdVk/XotSp2jZHjrnL9FoM+hbB3SnzLK4os4vNDb3ND8IiqpDLtozqNGRg==
+Program.Sub.Comments.End
